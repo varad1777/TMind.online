@@ -8,7 +8,7 @@
 # =====================
 # Docker volumes / runtime data
 # =====================
-**/data/
+
 **/volumes/
 **/storage/
 
