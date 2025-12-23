@@ -94,7 +94,7 @@ export default function AiRcaChat() {
  
 async function sendPrompt() {
   if (!user) {
-    return navigate("/auth");
+    return navigate("/");
   }
 
   setError(null);

@@ -9,8 +9,8 @@ const Login: React.FC = () => {
 
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("varad@gmail.com");
-  const [password, setPassword] = useState("Varad@123");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [errors, setErrors] = useState<{ username?: string; email?: string; password?: string }>({});
   const [loading, setLoading] = useState(false);
 

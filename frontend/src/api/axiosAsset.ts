@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const baseURL = `${import.meta.env.VITE_API_URL}/asset`;
+const baseURL = `${import.meta.env.VITE_API_URL}/api/asset`;
 
 const apiAsset = axios.create({
   baseURL,

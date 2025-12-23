@@ -44,7 +44,7 @@ const TELEMETRY_CACHE_KEY = "telemetryCache";
 const MAX_HISTORY = 100;
 const PERSIST_DEBOUNCE_MS = 1000;
 
-export default function Signals({ hubUrl = "http://localhost:5000/devices/hubs/modbus" }: { hubUrl?: string }) {
+export default function Signals({ hubUrl = "0/devices/hubs/modbus" }: { hubUrl?: string }) {
   const [connection, setConnection] = useState<HubConnection | null>(null);
   const [devices, setDevices] = useState<DevicesMap>(() => new Map());
   const [deviceNames, setDeviceNames] = useState<Map<string, string>>(() => new Map());

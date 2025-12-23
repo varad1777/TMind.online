@@ -54,7 +54,7 @@ namespace Api.Controllers
 
 
             var response = await _http.PostAsJsonAsync(
-       "http://gateway:5000/ai/ai/ask",
+       "http://gateway:5000/api/ai/ai/ask",
        new { prompt = payload }
    );
 

@@ -9,10 +9,10 @@ import {
   getMyNotifications,
   markNotificationAsRead,
   markAllNotificationsAsRead,
-  UserNotification,
+  type UserNotification,
 } from "@/api/assetApi";
 
-type NotificationType = UserNotification;
+type NotificationType = UserNotification
 
 interface NotificationContextProps {
   notifications: NotificationType[];
@@ -124,7 +124,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
    * =================================================== */
   useEffect(():any => {
     const connection = new signalR.HubConnectionBuilder()
-      .withUrl("http://localhost:5000/asset/hubs/notifications", {
+      .withUrl(`${import.meta.env.VITE_API_URL}/api/asset/hubs/notifications`, {
         withCredentials: true,
       })
       .withAutomaticReconnect()
