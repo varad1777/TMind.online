@@ -116,6 +116,12 @@ export default function Signals() {
     loadHierarchy();
   }, []);
 
+const [zoomRange, setZoomRange] = useState<{
+  start: string;
+  end: string;
+} | null>(null);
+
+const [isZooming, setIsZooming] = useState(false);
 
   /* ---------------- Load main asset signals & device ---------------- */
   useEffect(() => {
@@ -232,12 +238,30 @@ export default function Signals() {
           startDate = today.toISOString();
           endDate = new Date().toISOString();
         } else if (timeRange === "custom") {
-          apiTimeRange = TimeRange.Custom;
-          startDate = customStart?.toISOString();
-          endDate = customEnd?.toISOString();
-        } else {
+  apiTimeRange = TimeRange.Custom;
+
+  if (isZooming && zoomRange) {
+    startDate = zoomRange.start;
+    endDate = zoomRange.end;
+  } else {
+    startDate = customStart?.toISOString();
+    endDate = customEnd?.toISOString();
+  }
+}
+
+ else {
           apiTimeRange = TimeRange.Last24Hours;
         }
+
+        console.log("API PAYLOAD", {
+  timeRange,
+  isZooming,
+  zoomRange,
+  customStart,
+  customEnd,
+  startDate,
+  endDate,
+});
 
 
         // Combine all selected signals from both assets
@@ -295,10 +319,22 @@ export default function Signals() {
         setDisplayedTelemetryData([]);
       } finally {
         setFetchingData(false);
+        setIsZooming(false);
       }
     };
     fetchTelemetryData();
-  }, [mainAsset, compareAssetId, timeRange, customStart, customEnd, allAssets, selectedSignals, compareSelectedSignals]);
+  },[
+  mainAsset,
+  compareAssetId,
+  timeRange,
+  customStart,
+  customEnd,
+  zoomRange,
+  isZooming,
+  allAssets,
+  selectedSignals,
+  compareSelectedSignals
+]);
 
 
   /* ---------------- Chart Keys ---------------- */
@@ -355,27 +391,58 @@ export default function Signals() {
 
 
   /* ---------------- Zoom Functionality ---------------- */
-  const zoom = () => {
-    if (isSelectingReference) return;
+  // const zoom = () => {
+  //   if (isSelectingReference) return;
    
-    let left = refAreaLeft;
-    let right = refAreaRight;
-    if (left === right || right === undefined || left === undefined) {
-      setRefAreaLeft(undefined);
-      setRefAreaRight(undefined);
-      return;
-    }
-    if (left > right) [left, right] = [right, left];
-    const zoomedData = displayedTelemetryData.filter(d => d.time >= left && d.time <= right);
-    setDisplayedTelemetryData(zoomedData);
+  //   let left = refAreaLeft;
+  //   let right = refAreaRight;
+  //   if (left === right || right === undefined || left === undefined) {
+  //     setRefAreaLeft(undefined);
+  //     setRefAreaRight(undefined);
+  //     return;
+  //   }
+  //   if (left > right) [left, right] = [right, left];
+  //   const zoomedData = displayedTelemetryData.filter(d => d.time >= left && d.time <= right);
+  //   setDisplayedTelemetryData(zoomedData);
+  //   setRefAreaLeft(undefined);
+  //   setRefAreaRight(undefined);
+  // };
+
+const zoom = () => {
+  if (isSelectingReference) return;
+
+  let left = refAreaLeft;
+  let right = refAreaRight;
+
+  if (left == null || right == null || left === right) {
     setRefAreaLeft(undefined);
     setRefAreaRight(undefined);
-  };
+    return;
+  }
+
+  if (left > right) [left, right] = [right, left];
+
+  setZoomRange({
+    start: new Date(left).toISOString(),
+    end: new Date(right).toISOString(),
+  });
+
+  setIsZooming(true);        // ✅ mark zoom-driven fetch
+  setTimeRange("custom");   // triggers API
+
+  setRefAreaLeft(undefined);
+  setRefAreaRight(undefined);
+};
 
 
-  const zoomOut = () => {
-    setDisplayedTelemetryData(fullTelemetryData);
-  };
+
+
+const zoomOut = () => {
+  setZoomRange(null);
+  setIsZooming(false);
+  setTimeRange("24h"); // or previous range
+};
+
 
 
   /* ---------------- Signal Selection Handlers ---------------- */

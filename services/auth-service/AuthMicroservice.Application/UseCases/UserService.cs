@@ -12,8 +12,7 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
-using Syste
-m.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using Jose;
 
 namespace AuthMicroservice.Application.UseCases
@@ -439,5 +438,5 @@ namespace AuthMicroservice.Application.UseCases
         }
 
 
-    }
+    
 }
