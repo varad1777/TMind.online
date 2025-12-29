@@ -18,7 +18,7 @@ AiApi.interceptors.response.use(
 
       try {
        await axios.post(
-          `${baseURL}/auth/User/refresh-token`,  // Through gateway
+          `${import.meta.env.VITE_API_URL}/api/auth/User/refresh-token`,  // Through gateway
          {},
         { withCredentials: true }
        );

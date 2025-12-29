@@ -53,7 +53,7 @@ Keep it very veryshort and operator-friendly. Do NOT return JSON.
     systemPrompt,
     userPrompt,
     {
-      model: process.env.GROQ_MODEL || "groq-instruct-alpha"
+      model: "llama-3.1-8b-instant"
     }
   );
 

@@ -9,7 +9,7 @@ import sql from 'mssql';
 // import sql from 'mssql/msnodesqlv8.js';
 
 
-const GROQ_MODEL = process.env.GROQ_MODEL || 'llama-3.1-8b-instant';
+const GROQ_MODEL = 'llama-3.1-8b-instant';
 
 /**
  * BEST PRACTICE #1: Define Tool Schemas

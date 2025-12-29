@@ -176,7 +176,7 @@ async function llmGenerate(state) {
   // Call your existing groq service (same as in your code)
   try {
     const llmResp = await groqService.chatWithGroq(userQuery, systemPrompt, {
-      model: process.env.GROQ_MODEL || "groq-instruct-alpha",
+      model: "llama-3.1-8b-instant",
     });
     console.log("LLM Response:", llmResp.choices?.[0]?.message?.content);
     const text = llmResp.choices?.[0]?.message?.content || "";

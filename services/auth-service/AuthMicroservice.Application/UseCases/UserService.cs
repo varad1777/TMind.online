@@ -112,6 +112,9 @@ namespace AuthMicroservice.Application.UseCases
             if (user == null || !BCrypt.Net.BCrypt.Verify(loginDto.Password, user.PasswordHash))
                 throw new Exception("Invalid email or password.");
 
+            if(user.RefreshToken!=null && user.RefreshTokenExpiry!=null)
+               throw new Exception("User Already Logged In");
+
             // Generate tokens (you already have this method implemented)
             var (accessToken, refreshToken) = GenerateTokens(user);
 

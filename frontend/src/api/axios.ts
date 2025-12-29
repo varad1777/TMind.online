@@ -20,7 +20,7 @@ api.interceptors.response.use(
         console.log("🍪 Current cookies:", document.cookie); // Check what cookies exist
         
         const response = await axios.post(
-          `${baseURL}/auth/User/refresh-token`,
+          `${import.meta.env.VITE_API_URL}/api/auth/User/refresh-token`,
           {},
           { withCredentials: true }
         );

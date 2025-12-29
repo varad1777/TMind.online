@@ -18,7 +18,7 @@ async function chatWithGroq(prompt, systemPrompt = null, opts = {}) {
   if (!prompt || typeof prompt !== 'string') {
     throw new Error('prompt must be a non-empty string');
   }
-  const model = opts.model || process.env.GROQ_MODEL || 'llama-3.1-8b-instant';
+  const model = 'llama-3.1-8b-instant';
   const messages = [];
   if (systemPrompt) {
     messages.push({ role: 'system', content: systemPrompt });
