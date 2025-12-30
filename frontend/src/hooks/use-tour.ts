@@ -1,6 +1,7 @@
 // src/hooks/use-tour.ts
 import { driver } from "driver.js";
 import "driver.js/dist/driver.css";
+import { TOUR_AUTO_DELAY_MS } from "./tour_config";
 
 export type DriveStep = {
   element?: string | Element | (() => Element);
@@ -11,7 +12,7 @@ export type DriveStep = {
 };
 
 export const useTour = () => {
-  const startTour = (steps: DriveStep[], autoDelayMs: number = 2500) => {
+  const startTour = (steps: DriveStep[], autoDelayMs: number = TOUR_AUTO_DELAY_MS) => {
 
     // ⭐ Delay so DOM elements exist (fix autoTour filtering issue)
     setTimeout(() => {

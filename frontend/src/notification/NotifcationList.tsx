@@ -67,7 +67,7 @@ export const NotificationList = () => {
     },
     {
       root: null,
-      rootMargin: "200px", // prefetch early
+      rootMargin: "500px", // prefetch early
       threshold: 0,
     }
   );

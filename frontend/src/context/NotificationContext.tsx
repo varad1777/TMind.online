@@ -1,5 +1,5 @@
 // src/context/NotificationContext.tsx
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect,useRef } from "react";
 import * as signalR from "@microsoft/signalr";
 import { toast } from "react-toastify";
 import { AssetAlertToast } from "../notification/AssetAlertToast";
@@ -53,6 +53,10 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
   const [activeTab, setActiveTab] =
     useState<"all" | "unread" | "read">("all");
 
+  const [prefetchBuffer, setPrefetchBuffer] = useState<NotificationType[]>([]);
+  const nextCursorRef = useRef<string | null>(null);
+
+
   const [cursor, setCursor] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
   const PAGE_SIZE = 6;
@@ -63,39 +67,36 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
   setLoading(true);
 
   try {
-    let res;
+    const currentCursor = reset ? null : nextCursorRef.current ?? cursor;
+    const res =
+      activeTab === "all"
+        ? await getAllNotifications({ limit: PAGE_SIZE, cursor: currentCursor })
+        : await getMyNotifications({ unread: activeTab === "unread", limit: PAGE_SIZE, cursor: currentCursor });
 
-    if (activeTab === "all") {
-      // ✅ GLOBAL + USER notifications
-      res = await getAllNotifications({
-        limit: PAGE_SIZE,
-        cursor: reset ? null : cursor,
-      });
+    if (reset) {
+      setNotifications(res.data);
+    } else if (prefetchBuffer.length > 0) {
+      setNotifications(prev => [...prev, ...prefetchBuffer]);
+      setPrefetchBuffer([]);
     } else {
-      // ✅ USER notifications only
-      res = await getMyNotifications({
-        unread: activeTab === "unread",
-        limit: PAGE_SIZE,
-        cursor: reset ? null : cursor,
-      });
+      setNotifications(prev => [...prev, ...res.data]);
     }
 
-    setNotifications(prev =>
-      reset ? res.data : [...prev, ...res.data]
-    );
-
-    setCursor(res.nextCursor);
+    nextCursorRef.current = res.nextCursor;
     setHasMore(res.hasMore);
 
-    // unread count always from "my" notifications
-    const unreadRes = await getMyNotifications({
-      unread: true,
-      limit: 50,
-    });
-    setUnreadCount(unreadRes.data.length);
+    // prefetch next page in background
+    if (res.hasMore && res.nextCursor) {
+      const prefetch = await fetchNotificationsPage(res.nextCursor);
+      setPrefetchBuffer(prefetch.data);
+      nextCursorRef.current = prefetch.nextCursor;
+    }
 
+    // update unread count
+    const unreadRes = await getMyNotifications({ unread: true, limit: 50 });
+    setUnreadCount(unreadRes.data.length);
   } catch (err) {
-    console.error("Failed to load notifications:", err);
+    console.error(err);
   } finally {
     setLoading(false);
   }
@@ -115,9 +116,15 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
      LOAD MORE (PAGINATION)
   -------------------------------------------------------- */
   const loadMore = () => {
-    if (!hasMore) return;
+  if (!hasMore || loading) return;
+
+  if (prefetchBuffer.length > 0) {
+    setNotifications(prev => [...prev, ...prefetchBuffer]);
+    setPrefetchBuffer([]);
+  } else {
     loadNotifications();
-  };
+  }
+};
 
   /** ===================================================
    *                 SIGNALR REAL TIME
