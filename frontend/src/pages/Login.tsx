@@ -86,7 +86,7 @@ const Login: React.FC = () => {
         <p className="text-sm text-muted-foreground text-center mb-4">
           {mode === "signup"
             ? "Sign up to start managing your devices"
-            : "Login to access your TMind dashboard"}
+            : "Login to access your WMind dashboard"}
         </p>
 
         
