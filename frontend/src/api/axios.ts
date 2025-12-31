@@ -1,4 +1,5 @@
 import axios from "axios";
+import authApi from "@/api/authApi";
 
 const baseURL = `${import.meta.env.VITE_API_URL}/api/devices`;
 
@@ -30,7 +31,8 @@ api.interceptors.response.use(
       } catch (err:any) {
         console.log("❌ Refresh token failed:", err.response?.data);
         localStorage.removeItem("user");
-          window.location.href = "/";
+        await authApi.post("/User/Logout");
+        window.location.href = "/";
         return Promise.reject(err);
       }
     }

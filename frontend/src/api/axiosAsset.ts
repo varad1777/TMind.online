@@ -1,4 +1,5 @@
 import axios from "axios";
+import authApi from "@/api/authApi";
 
 const baseURL = `${import.meta.env.VITE_API_URL}/api/asset`;
 
@@ -27,6 +28,7 @@ apiAsset.interceptors.response.use(
       } catch (err) {
         console.error("Refresh token failed. Redirecting...");
         localStorage.removeItem("user");
+        await authApi.post("/User/Logout");
         if (window.location.pathname !== "/") {
           window.location.href = "/";
         }
