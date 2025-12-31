@@ -15,18 +15,16 @@ export default function Sidebar() {
   );
 
   return (
-    <aside id="sidebar" className="sticky top-0 z-40 w-64 bg-sidebar text-sidebar-foreground border-r border-sidebar-border flex flex-col py-1 px-4  rounded-sm">
-      <div className="h-12 flex items-center justify-center border-b border-sidebar-border px-4 mb-6">
-      <div className="flex items-center">
-        <div className="w-30 h-10 bg-sidebar rounded flex items-center justify-center">
-          <img
-            src={WmindLogo}
-            alt="WMind"
-            className="max-w-full max-h-full object-contain"
-          />
+    <aside id="sidebar" className="sticky top-0 z-40 w-64 bg-sidebar text-sidebar-foreground border-r border-sidebar-border flex flex-col  px-4  rounded-sm">
+      <div className="h-16 flex items-center justify-center border-b border-sidebar-border px-4 mb-6">
+          <div className="w-32 h-12 bg-sidebar rounded flex items-center justify-center">
+            <img
+              src={WmindLogo}
+              alt="WMind"
+              className="max-w-full max-h-full object-contain"
+            />
+          </div>
         </div>
-      </div>
-      </div>
 
        <nav className="space-y-2">
         {visibleItems.map((item) => {
