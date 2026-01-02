@@ -266,7 +266,7 @@ namespace AuthMicroservice.Application.UseCases
                     new Claim(ClaimTypes.Email,user.Email),
                     new Claim("UserId", user.UserId.ToString())
                 }),
-                Expires = DateTime.UtcNow.AddDays(1),
+                Expires = DateTime.UtcNow.AddMinutes(15),
                 Issuer = _configuration["Jwt:Issuer"],
                 Audience = _configuration["Jwt:Audience"],
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
@@ -438,5 +438,6 @@ namespace AuthMicroservice.Application.UseCases
         }
 
 
-    }
+    
+ }
 }

@@ -55,7 +55,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const [cursor, setCursor] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
-  const PAGE_SIZE = 6;
+  const PAGE_SIZE = 10;
   
 
   const loadNotifications = async (reset = false) => {
@@ -115,7 +115,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
      LOAD MORE (PAGINATION)
   -------------------------------------------------------- */
   const loadMore = () => {
-    if (!hasMore) return;
+    if (!hasMore || loading) return;
     loadNotifications();
   };
 

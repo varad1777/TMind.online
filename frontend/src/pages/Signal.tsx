@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState,useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { getAssetHierarchy, getSignalOnAsset } from "@/api/assetApi";
@@ -78,6 +78,11 @@ export default function Signals() {
   const [compareSelectedSignals, setCompareSelectedSignals] = useState<SignalType[]>([]);
   const [refAreaLeft, setRefAreaLeft] = useState<number | undefined>(undefined);
   const [refAreaRight, setRefAreaRight] = useState<number | undefined>(undefined);
+  const [mainSignalDropdownOpen, setMainSignalDropdownOpen] = useState(false);
+  const [compareSignalDropdownOpen, setCompareSignalDropdownOpen] = useState(false);
+  const mainSignalDropdownRef = useRef<HTMLDivElement | null>(null);
+  const compareSignalDropdownRef = useRef<HTMLDivElement | null>(null);
+
  
   // Reference Point States
   const [referencePoint, setReferencePoint] = useState<{
@@ -116,6 +121,34 @@ export default function Signals() {
     loadHierarchy();
   }, []);
 
+useEffect(() => {
+  const handler = (e: MouseEvent) => {
+    if (
+      mainSignalDropdownRef.current &&
+      !mainSignalDropdownRef.current.contains(e.target as Node)
+    ) {
+      setMainSignalDropdownOpen(false);
+    }
+
+    if (
+      compareSignalDropdownRef.current &&
+      !compareSignalDropdownRef.current.contains(e.target as Node)
+    ) {
+      setCompareSignalDropdownOpen(false);
+    }
+  };
+
+  document.addEventListener("mousedown", handler);
+  return () => document.removeEventListener("mousedown", handler);
+}, []);
+
+
+const [zoomRange, setZoomRange] = useState<{
+  start: string;
+  end: string;
+} | null>(null);
+
+const [isZooming, setIsZooming] = useState(false);
 
   /* ---------------- Load main asset signals & device ---------------- */
   useEffect(() => {
@@ -179,6 +212,27 @@ export default function Signals() {
     loadCompareSignals();
   }, [compareAssetId]);
 
+  const toggleMainSignalSelection = (signal: SignalType) => {
+  setSelectedSignals(prev => {
+    const exists = prev.some(s => s.signalTypeId === signal.signalTypeId);
+    if (exists) {
+      return prev.filter(s => s.signalTypeId !== signal.signalTypeId);
+    }
+    return [...prev, signal];
+  });
+};
+
+const toggleCompareSignalSelection = (signal: SignalType) => {
+  setCompareSelectedSignals(prev => {
+    const exists = prev.some(s => s.signalTypeId === signal.signalTypeId);
+    return exists
+      ? prev.filter(s => s.signalTypeId !== signal.signalTypeId)
+      : [...prev, signal];
+  });
+};
+
+
+
 
   const fetchDevicesForAsset = async (assetId: string): Promise<string[]> => {
     try {
@@ -232,12 +286,30 @@ export default function Signals() {
           startDate = today.toISOString();
           endDate = new Date().toISOString();
         } else if (timeRange === "custom") {
-          apiTimeRange = TimeRange.Custom;
-          startDate = customStart?.toISOString();
-          endDate = customEnd?.toISOString();
-        } else {
+  apiTimeRange = TimeRange.Custom;
+
+  if (isZooming && zoomRange) {
+    startDate = zoomRange.start;
+    endDate = zoomRange.end;
+  } else {
+    startDate = customStart?.toISOString();
+    endDate = customEnd?.toISOString();
+  }
+}
+
+ else {
           apiTimeRange = TimeRange.Last24Hours;
         }
+
+        console.log("API PAYLOAD", {
+  timeRange,
+  isZooming,
+  zoomRange,
+  customStart,
+  customEnd,
+  startDate,
+  endDate,
+});
 
 
         // Combine all selected signals from both assets
@@ -295,10 +367,22 @@ export default function Signals() {
         setDisplayedTelemetryData([]);
       } finally {
         setFetchingData(false);
+        setIsZooming(false);
       }
     };
     fetchTelemetryData();
-  }, [mainAsset, compareAssetId, timeRange, customStart, customEnd, allAssets, selectedSignals, compareSelectedSignals]);
+  },[
+  mainAsset,
+  compareAssetId,
+  timeRange,
+  customStart,
+  customEnd,
+  zoomRange,
+  isZooming,
+  allAssets,
+  selectedSignals,
+  compareSelectedSignals
+]);
 
 
   /* ---------------- Chart Keys ---------------- */
@@ -355,44 +439,75 @@ export default function Signals() {
 
 
   /* ---------------- Zoom Functionality ---------------- */
-  const zoom = () => {
-    if (isSelectingReference) return;
+  // const zoom = () => {
+  //   if (isSelectingReference) return;
    
-    let left = refAreaLeft;
-    let right = refAreaRight;
-    if (left === right || right === undefined || left === undefined) {
-      setRefAreaLeft(undefined);
-      setRefAreaRight(undefined);
-      return;
-    }
-    if (left > right) [left, right] = [right, left];
-    const zoomedData = displayedTelemetryData.filter(d => d.time >= left && d.time <= right);
-    setDisplayedTelemetryData(zoomedData);
+  //   let left = refAreaLeft;
+  //   let right = refAreaRight;
+  //   if (left === right || right === undefined || left === undefined) {
+  //     setRefAreaLeft(undefined);
+  //     setRefAreaRight(undefined);
+  //     return;
+  //   }
+  //   if (left > right) [left, right] = [right, left];
+  //   const zoomedData = displayedTelemetryData.filter(d => d.time >= left && d.time <= right);
+  //   setDisplayedTelemetryData(zoomedData);
+  //   setRefAreaLeft(undefined);
+  //   setRefAreaRight(undefined);
+  // };
+
+const zoom = () => {
+  if (isSelectingReference) return;
+
+  let left = refAreaLeft;
+  let right = refAreaRight;
+
+  if (left == null || right == null || left === right) {
     setRefAreaLeft(undefined);
     setRefAreaRight(undefined);
-  };
+    return;
+  }
+
+  if (left > right) [left, right] = [right, left];
+
+  setZoomRange({
+    start: new Date(left).toISOString(),
+    end: new Date(right).toISOString(),
+  });
+
+  setIsZooming(true);        // ✅ mark zoom-driven fetch
+  setTimeRange("custom");   // triggers API
+
+  setRefAreaLeft(undefined);
+  setRefAreaRight(undefined);
+};
 
 
-  const zoomOut = () => {
-    setDisplayedTelemetryData(fullTelemetryData);
-  };
 
 
-  /* ---------------- Signal Selection Handlers ---------------- */
-  const handleMainSignalChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedOptions = Array.from(e.target.selectedOptions);
-    const selectedIds = selectedOptions.map(opt => opt.value);
-    const selected = mainSignals.filter(s => selectedIds.includes(s.signalTypeId));
-    setSelectedSignals(selected);
-  };
+const zoomOut = () => {
+  setZoomRange(null);
+  setIsZooming(false);
+  setTimeRange("24h"); // or previous range
+};
 
 
-  const handleCompareSignalChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedOptions = Array.from(e.target.selectedOptions);
-    const selectedIds = selectedOptions.map(opt => opt.value);
-    const selected = compareSignals.filter(s => selectedIds.includes(s.signalTypeId));
-    setCompareSelectedSignals(selected);
-  };
+
+  // /* ---------------- Signal Selection Handlers ---------------- */
+  // const handleMainSignalChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  //   const selectedOptions = Array.from(e.target.selectedOptions);
+  //   const selectedIds = selectedOptions.map(opt => opt.value);
+  //   const selected = mainSignals.filter(s => selectedIds.includes(s.signalTypeId));
+  //   setSelectedSignals(selected);
+  // };
+
+
+  // const handleCompareSignalChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  //   const selectedOptions = Array.from(e.target.selectedOptions);
+  //   const selectedIds = selectedOptions.map(opt => opt.value);
+  //   const selected = compareSignals.filter(s => selectedIds.includes(s.signalTypeId));
+  //   setCompareSelectedSignals(selected);
+  // };
 
 
   /* ---------------- Custom Tooltip Component ---------------- */
@@ -602,36 +717,57 @@ export default function Signals() {
 
 
             {/* Signal Selection - Multiple Select */}
-            <div>
-              <label className="block mb-2 font-semibold">
-                Select Signals (Hold Ctrl/Cmd for multiple):
-              </label>
-              <select
-                multiple
-                value={selectedSignals.map(s => s.signalTypeId)}
-                onChange={handleMainSignalChange}
-                disabled={!mainSignals.length}
-                size={4}
-                className="tour-main-signals w-full rounded-md border border-border bg-background
-             px-3 py-2 text-sm text-foreground
-             focus:outline-none focus:ring-2 focus:ring-primary"
-              >
-                {mainSignals.length === 0 ? (
-                  <option disabled>No signals available</option>
-                ) : (
-                  mainSignals.map(s => (
-                    <option key={s.signalTypeId} value={s.signalTypeId}>
-                      {s.signalName}
-                    </option>
-                  ))
-                )}
-              </select>
-              {selectedSignals.length > 0 && (
-                <p className="text-sm text-muted-foreground mt-2">
-                  Selected: {selectedSignals.map(s => s.signalName).join(", ")}
-                </p>
-              )}
-            </div>
+              <div ref={mainSignalDropdownRef} className="relative">
+                  <label className="block mb-2 font-semibold">
+                    Signals ({selectedSignals.length} selected)
+                  </label>
+
+                  <Button
+                    variant="outline"
+                    className="w-full justify-between"
+                    onClick={() => setMainSignalDropdownOpen(o => !o)}
+                    disabled={!mainSignals.length}
+                  >
+                    {selectedSignals.length === 0
+                      ? "Select signals"
+                      : `${selectedSignals.length} signal(s) selected`}
+                  </Button>
+
+                  {mainSignalDropdownOpen && (
+                    <div className="absolute z-50 mt-1 w-full max-h-60 overflow-y-auto rounded-lg border bg-white dark:bg-gray-800 shadow-lg">
+                      {mainSignals.length === 0 ? (
+                        <p className="p-3 text-sm text-muted-foreground">
+                          No signals available
+                        </p>
+                      ) : (
+                        mainSignals.map(signal => (
+                          <div
+                            key={signal.signalTypeId}
+                            className="flex items-center gap-2 p-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+                            onClick={() => toggleMainSignalSelection(signal)}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={selectedSignals.some(
+                                s => s.signalTypeId === signal.signalTypeId
+                              )}
+                              readOnly
+                              className="w-4 h-4"
+                            />
+                            <span>{signal.signalName}</span>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  )}
+
+                  {selectedSignals.length > 0 && (
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      Selected: {selectedSignals.map(s => s.signalName).join(", ")}
+                    </p>
+                  )}
+                </div>
+
 
 
             {/* Device */}
@@ -676,34 +812,45 @@ export default function Signals() {
             {compareAssetId && (
               <>
                 {/* Compare Signal Selection - Multiple Select */}
-                <div>
-                  <label className="block mb-2 font-semibold">
-                    Select Signals (Hold Ctrl/Cmd for multiple):
-                  </label>
-                  <select
-                    multiple
-                    value={compareSelectedSignals.map(s => s.signalTypeId)}
-                    onChange={handleCompareSignalChange}
-                    disabled={!compareSignals.length}
-                    size={4}
-                    className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus :ring-2 focus:ring-blue-500"
-                  >
-                    {compareSignals.length === 0 ? (
-                      <option disabled>No signals available</option>
-                    ) : (
-                      compareSignals.map(s => (
-                        <option key={s.signalTypeId} value={s.signalTypeId}>
-                          {s.signalName}
-                        </option>
-                      ))
-                    )}
-                  </select>
-                  {compareSelectedSignals.length > 0 && (
-                    <p className="text-sm text-muted-foreground mt-2">
-                      Selected: {compareSelectedSignals.map(s => s.signalName).join(", ")}
-                    </p>
-                  )}
-                </div>
+               <div ref={compareSignalDropdownRef} className="relative">
+                <label className="block mb-2 font-semibold">
+                  Signals ({compareSelectedSignals.length} selected)
+                </label>
+
+                <Button
+                  variant="outline"
+                  className="w-full justify-between"
+                  onClick={() => setCompareSignalDropdownOpen(o => !o)}
+                  disabled={!compareSignals.length}
+                >
+                  {compareSelectedSignals.length === 0
+                    ? "Select signals"
+                    : `${compareSelectedSignals.length} signal(s) selected`}
+                </Button>
+
+                {compareSignalDropdownOpen && (
+                  <div className="absolute z-50 mt-1 w-full max-h-60 overflow-y-auto rounded-lg border bg-white dark:bg-gray-800 shadow-lg">
+                    {compareSignals.map(signal => (
+                      <div
+                        key={signal.signalTypeId}
+                        className="flex items-center gap-2 p-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+                        onClick={() => toggleCompareSignalSelection(signal)}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={compareSelectedSignals.some(
+                            s => s.signalTypeId === signal.signalTypeId
+                          )}
+                          readOnly
+                          className="w-4 h-4"
+                        />
+                        <span>{signal.signalName}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
 
 
                 {/* Device */}

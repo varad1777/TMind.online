@@ -66,9 +66,9 @@ export default function Topbar({ onToggleSidebar }: TopbarProps) {
         </Button>
 
         <h1 className="text-lg font-semibold text-foreground tracking-tight">
-          <span className="lg:hidden">Tmind</span>
+          <span className="lg:hidden">Wmind</span>
           <span className="hidden lg:inline">
-            Tata Manufacturing Intelligence and Network Devices
+            Wonderbiz Manufacturing Intelligence and Network Devices
           </span>
         </h1>
       </div>

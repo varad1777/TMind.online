@@ -140,33 +140,33 @@ export default function Dashboard() {
       {/* KPI Section */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
         <div id="kpi-plants">
-          <KPICard title="Plants" value={plantCount} icon={<Building2 className="w-6 h-6" />} trend="+0 this year" trendUp borderColor="border-blue-400" />
+          <KPICard title="Plants" value={plantCount} icon={<Building2 className="w-6 h-6" />} trend="+0 this year" trendUp borderColor="border-primary" />
         </div>
         <div id="kpi-departments">
-          <KPICard title="Departments" value={departmentCount} icon={<Building2 className="w-6 h-6" />} trend="+1 this month" trendUp borderColor="border-indigo-400" />
+          <KPICard title="Departments" value={departmentCount} icon={<Building2 className="w-6 h-6" />} trend="+1 this month" trendUp borderColor="border-primary" />
         </div>
         <div id="kpi-assets">
-          <KPICard title="Total Assets" value={totalAssets} icon={<Network className="w-6 h-6" />} trend="+12 this week" trendUp borderColor="border-purple-400" />
+          <KPICard title="Total Assets" value={totalAssets} icon={<Network className="w-6 h-6" />} trend="+12 this week" trendUp borderColor="border-primary" />
         </div>
         <div id="kpi-devices">
           {isAdmin ? (
-            <KPICard title="Active Devices" value={activeDevices} icon={<Cpu className="w-6 h-6" />} status={`${deletedDevices} offline`} borderColor="border-green-400" />
+            <KPICard title="Active Devices" value={activeDevices} icon={<Cpu className="w-6 h-6" />} status={`${deletedDevices} offline`} borderColor="border-primary" />
           ) : (
-            <KPICard title="Active Devices" value={deletedDevices} icon={<Cpu className="w-6 h-6" />} borderColor="border-green-400" />
+            <KPICard title="Active Devices" value={deletedDevices} icon={<Cpu className="w-6 h-6" />} borderColor="border-primary" />
           )}
         </div>
         <div id="kpi-alerts">
-          <KPICard title="Alerts Today" value={alertsToday} icon={<AlertTriangle className="w-6 h-6" />} trend="-3 from yesterday" trendUp={false} borderColor="border-red-400" />
+          <KPICard title="Alerts Today" value={alertsToday} icon={<AlertTriangle className="w-6 h-6  text-red-500" />} trend="-3 from yesterday" trendUp={false} borderColor="border-red-400" />
         </div>
       </div>
 
       {/* Stat Section */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mt-3">
         <div id="stat-uptime">
-          <StatBox label="System Uptime" value={`${uptime}%`} icon={<CheckCircle2 className="w-5 h-5 text-emerald-500" />} colorClass="bg-emerald-500/20" borderColor="border-emerald-500" />
+          <StatBox label="System Uptime" value={`${uptime}%`} icon={<CheckCircle2 className="w-5 h-5 text-primary" />} colorClass="bg-green-500/20" borderColor="border-green-500" />
         </div>
         <div id="stat-efficiency">
-          <StatBox label="Plant Efficiency" value={`${efficiency}%`} icon={<TrendingUp className="w-5 h-5 text-primary" />} colorClass="bg-primary/20" borderColor="border-primary" />
+          <StatBox label="Plant Efficiency" value={`${efficiency}%`} icon={<TrendingUp className="w-5 h-5 text-primary" />} colorClass="bg-green-500/20" borderColor="border-green-500" />
         </div>
         <div id="stat-response">
           <StatBox label="Avg Response Time" value={`${avgResponse.toFixed(2)} ms`} icon={<Clock className="w-5 h-5 text-amber-500" />} colorClass="bg-amber-500/20" borderColor="border-amber-500" />
@@ -178,12 +178,12 @@ export default function Dashboard() {
 
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
-        <div id="chart-device-status" className="bg-white/5 border border-blue-400 rounded-xl p-4">
+        <div id="chart-device-status" className="bg-white/5 border border-primary rounded-xl p-4">
           <h3 className="font-semibold mb-3">Device Status</h3>
           {/* Device status bars */}
         </div>
 
-        <div id="chart-performance" className="bg-white/5 border border-purple-400 rounded-xl p-4">
+        <div id="chart-performance" className="bg-white/5 border border-primary rounded-xl p-4">
           <h3 className="font-semibold mb-3">Performance Metrics</h3>
           {/* Performance bars */}
         </div>

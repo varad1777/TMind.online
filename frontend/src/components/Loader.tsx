@@ -14,7 +14,7 @@ const PageLoader: React.FC<PageLoaderProps> = ({ isVisible }) => {
     location.pathname === "/404";
 
   if (!isVisible || disableLoader) return null;
-  const text = "tmind.wonderbiz.org";
+  const text = "wmind.wonderbiz.org";
 
   return (
     <div

@@ -1,0 +1,1 @@
+export const TOUR_AUTO_DELAY_MS:number = 5000;
