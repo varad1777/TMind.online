@@ -230,68 +230,74 @@ export default function Devices() {
                   <tr key={d.deviceId} className="border-t border-border hover:bg-muted/20 transition-colors">
                     <td className="p-4 font-medium">{d.name}</td>
                     <td className="p-4">{d.description}</td>
-                    <td className="p-4 flex justify-center gap-2 flex-wrap">
-
-                        <>
+                    <td className="p-4 flex justify-center">
+                      <div className="grid grid-cols-2 md:flex md:flex-row gap-2 w-full justify-center">
                           <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => navigate(`/devices/edit/${d.deviceId}`)}
-                            className="flex items-center gap-1 edit-device-btn"
-                          >
-                            <Settings className="h-4 w-4 " /> Edit
-                          </Button>
+                              variant="outline"
+                              size="sm"
+                              title="Edit"
+                              onClick={() => navigate(`/devices/edit/${d.deviceId}`)}
+                              className="flex items-center gap-1 edit-device-btn"
+                            >
+                              <Settings className="h-4 w-4" />
+                              <span className="hidden md:inline">Edit</span>
+                            </Button>
+
 
                           {!d.deviceConfiguration && (
                             <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => navigate(`/devices/config/${d.deviceId}`)}
-                              className="flex items-center gap-1 config-device-btn"
-                            >
-                              <Wrench className="h-4 w-4 " /> Config
-                            </Button>
-                          )}
-                        {isAdmin && (
-                          <Button
                             variant="outline"
                             size="sm"
-                            className="flex items-center gap-1 delete-device-btn"
-                            onClick={() => {
-                              setSelectedDevice(d);
-                              setOpenDialog(true);
-                            }}
+                            title="Config"
+                            onClick={() => navigate(`/devices/config/${d.deviceId}`)}
+                            className="flex items-center gap-1 config-device-btn"
                           >
-                            <Trash2 className="h-4 w-4" /> Delete
+                            <Wrench className="h-4 w-4" />
+                            <span className="hidden md:inline">Config</span>
                           </Button>
                           )}
-                        </>                    
+                       {isAdmin && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          title="Delete"
+                          onClick={() => {
+                            setSelectedDevice(d);
+                            setOpenDialog(true);
+                          }}
+                          className="flex items-center gap-1"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          <span className="hidden md:inline delete-device-btn">Delete</span>
+                        </Button>
+                      )}
+                             
                      <Button
                         variant="outline"
                         size="sm"
+                        title="Slave"
                         onClick={() => navigate(`/devices/ports/${d.deviceId}`)}
-                        className="flex items-center gap-1 slave-device-btn"
-                      >
-                        <HdmiPort className="h-4 w-4" /> Slave
-                      </Button>
-                      {d.deviceConfiguration && (
-                      <Button
-                        variant={isSelected ? "destructive" : "outline"}
-                        size="sm"
                         className="flex items-center gap-1"
-                        onClick={() => toggleSelectedDevice(d.name, d.deviceId)}
                       >
-                        {isSelected ? (
-                          <>
-                            <View className="h-4 w-4" /> Unsubscribe
-                          </>
-                        ) : (
-                          <>
-                            <View className="h-4 w-4" /> Subscribe
-                          </>
-                        )}
-                      </Button>)
-              } 
+                        <HdmiPort className="h-4 w-4" />
+                        <span className="hidden md:inline slave-device-btn">Slave</span>
+                      </Button>
+
+                      {d.deviceConfiguration && (
+                        <Button
+                          variant={isSelected ? "destructive" : "outline"}
+                          size="sm"
+                          title={isSelected ? "Unsubscribe" : "Subscribe"}
+                          onClick={() => toggleSelectedDevice(d.name, d.deviceId)}
+                          className="flex items-center gap-1"
+                        >
+                          <View className="h-4 w-4" />
+                          <span className="hidden md:inline">
+                            {isSelected ? "Unsubscribe" : "Subscribe"}
+                          </span>
+                        </Button>
+                      )}
+                      </div>
                     </td>
                   </tr>
                 );
