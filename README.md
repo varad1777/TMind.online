@@ -56,7 +56,7 @@ WMIND follows a **distributed microservice architecture** to ensure scalability,
 
 <img width="593" height="727" alt="Architecture hld" src="https://github.com/user-attachments/assets/dc1c0d8e-cecb-41a4-b808-3a90c10222bf" />
 
-<img width="2061" height="1334" alt="diagram-export-22-12-2025-14_03_52" src="https://github.com/user-attachments/assets/171e1e1e-59c9-4661-8bb7-722ecc393291" />
+<img width="593" height="400" alt="diagram-export-22-12-2025-14_03_52" src="https://github.com/user-attachments/assets/171e1e1e-59c9-4661-8bb7-722ecc393291" />
 
 
 
