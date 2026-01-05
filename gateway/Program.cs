@@ -4,43 +4,47 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Ocelot.DependencyInjection;
 using Ocelot.Middleware;
+using Gateway.Handlers;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Load configuration
+// ===================== Load Configurations =====================
 builder.Configuration
     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
     .AddJsonFile("ocelot.json", optional: false, reloadOnChange: true);
 
-
-
-// Read config values
 var jwtConfig = builder.Configuration.GetSection("Jwt");
 var corsOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>();
 var gatewayUrl = builder.Configuration["Gateway:Url"];
-
-// ===================== VALIDATION (IMPORTANT) =====================
 
 var jwtKey = jwtConfig["Key"];
 var jwtIssuer = jwtConfig["Issuer"];
 var jwtAudience = jwtConfig["Audience"];
 
-if (string.IsNullOrWhiteSpace(jwtKey))
-    throw new InvalidOperationException("JWT Key is missing");
+if (string.IsNullOrWhiteSpace(jwtKey)) throw new InvalidOperationException("JWT Key is missing");
+if (string.IsNullOrWhiteSpace(jwtIssuer)) throw new InvalidOperationException("JWT Issuer is missing");
+if (string.IsNullOrWhiteSpace(jwtAudience)) throw new InvalidOperationException("JWT Audience is missing");
+if (corsOrigins == null || corsOrigins.Length == 0) throw new InvalidOperationException("CORS AllowedOrigins is missing");
 
-if (string.IsNullOrWhiteSpace(jwtIssuer))
-    throw new InvalidOperationException("JWT Issuer is missing");
+// ===================== Services =====================
 
-if (string.IsNullOrWhiteSpace(jwtAudience))
-    throw new InvalidOperationException("JWT Audience is missing");
-
-if (corsOrigins == null || corsOrigins.Length == 0)
-    throw new InvalidOperationException("CORS AllowedOrigins is missing");
-
-// ===================== SERVICES =====================
-
-// Ocelot
-builder.Services.AddOcelot(builder.Configuration);
+// JWT Authentication
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.RequireHttpsMetadata = jwtConfig.GetValue<bool>("RequireHttpsMetadata");
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = jwtIssuer,
+            ValidAudience = jwtAudience,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
+        };
+    });
 
 // CORS
 builder.Services.AddCors(options =>
@@ -54,48 +58,11 @@ builder.Services.AddCors(options =>
     });
 });
 
-// Authentication
-builder.Services
-    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
-    {
-        options.RequireHttpsMetadata =
-            jwtConfig.GetValue<bool>("RequireHttpsMetadata");
-
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-
-            ValidIssuer = jwtIssuer,
-            ValidAudience = jwtAudience,
-
-            IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(jwtKey)
-            )
-        };
-
-        options.Events = new JwtBearerEvents
-        {
-            OnMessageReceived = context =>
-            {
-                if (context.Request.Cookies.ContainsKey("access_token"))
-                {
-                    context.Token = context.Request.Cookies["access_token"];
-                }
-                return Task.CompletedTask;
-            }
-        };
-    });
-
 // Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "Gateway API", Version = "v1" });
-
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",
@@ -105,36 +72,36 @@ builder.Services.AddSwaggerGen(c =>
         In = ParameterLocation.Header,
         Description = "Enter JWT token"
     });
-
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
         {
             new OpenApiSecurityScheme
             {
-                Reference = new OpenApiReference
-                {
-                    Type = ReferenceType.SecurityScheme,
-                    Id = "Bearer"
-                }
+                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
             },
             Array.Empty<string>()
         }
     });
 });
 
-// Bind gateway URL SAFELY
+// Ocelot + DelegatingHandler to extract UserId
+builder.Services.AddTransient<ClientIdFromJwtHandler>();
+builder.Services.AddOcelot(builder.Configuration)
+       .AddDelegatingHandler<ClientIdFromJwtHandler>(true); // applied to all routes
+
+// Health Checks
+builder.Services.AddHealthChecks();
+
+// Bind Gateway URL
 if (!string.IsNullOrWhiteSpace(gatewayUrl))
 {
     builder.WebHost.UseUrls(gatewayUrl);
 }
 
-builder.Services.AddHealthChecks();
-
-
+// ===================== Build App =====================
 var app = builder.Build();
 
-// ===================== PIPELINE =====================
-
+// ===================== Pipeline =====================
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -146,9 +113,12 @@ app.UseCors("AllowConfiguredOrigins");
 app.UseWebSockets();
 app.UseAuthentication();
 app.UseAuthorization();
+
+
+// Health endpoint
 app.MapHealthChecks("/health");
 
-// Ocelot MUST be last
+// Ocelot must be last in pipeline
 await app.UseOcelot();
 
 app.Run();

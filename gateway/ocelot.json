@@ -1,106 +1,110 @@
 ﻿{
   "Routes": [
     {
-      "DownstreamPathTemplate": "/api/{everything}",
+      "DownstreamPathTemplate": "/api/auth/{everything}",
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
-        {
-          "Host": "device-service",
-          "Port": 5002
-        }
-      ],
-      "UpstreamPathTemplate": "/api/devices/{everything}",
-      "UpstreamHttpMethod": [
-        "GET",
-        "POST",
-        "PUT",
-        "DELETE"
-      ],
-      "DownstreamHeaderTransform": {
-        "Cookie": "{Headers.Cookie}"
-      }
-    },
-    {
-      "DownstreamPathTemplate": "/api/{everything}",
-      "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [
-        {
-          "Host": "auth-service",
-          "Port": 5001
-        }
+        { "Host": "auth-service", "Port": 5001 }
       ],
       "UpstreamPathTemplate": "/api/auth/{everything}",
-      "UpstreamHttpMethod": [
-        "GET",
-        "POST",
-        "PUT",
-        "DELETE",
-        "PATCH"
-      ],
+      "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE", "PATCH"],
       "DownstreamHeaderTransform": {
         "Cookie": "{Headers.Cookie}"
       }
+      // No rate limiting for auth/login
     },
     {
       "DownstreamPathTemplate": "/api/{everything}",
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
-        {
-          "Host": "asset-service",
-          "Port": 5003
-        }
+        { "Host": "asset-service", "Port": 5003 }
       ],
       "UpstreamPathTemplate": "/api/asset/{everything}",
-      "UpstreamHttpMethod": [
-        "GET",
-        "POST",
-        "PUT",
-        "DELETE",
-        "PATCH"
-      ],
-      "DownstreamHeaderTransform": {
-        "Cookie": "{Headers.Cookie}"
-      }
-    },
-    {
-      "DownstreamPathTemplate": "/api/{everything}",
-      "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [
-        {
-          "Host": "ai-server",
-          "Port": 5004
-        }
-      ],
+      "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE", "PATCH"],
       "DownstreamHeaderTransform": {
         "Cookie": "{Headers.Cookie}"
       },
+      "RateLimitOptions": {
+        "EnableRateLimiting": true,
+        "Period": "60s",
+        "Limit": 3,
+        "ClientIdHeader": "Client-Id",
+        "HttpStatusCode": 429,
+        "QuotaExceededMessage": "Rate limit exceeded for this user"
+      }
+    },
+    {
+      "DownstreamPathTemplate": "/api/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        { "Host": "device-service", "Port": 5002 }
+      ],
+      "UpstreamPathTemplate": "/api/devices/{everything}",
+      "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE"],
+      "DownstreamHeaderTransform": {
+        "Cookie": "{Headers.Cookie}"
+      },
+      "RateLimitOptions": {
+        "EnableRateLimiting": true,
+        "Period": "1s",
+        "Limit": 5,
+        "ClientIdHeader": "Client-Id",
+        "HttpStatusCode": 429,
+        "QuotaExceededMessage": "Rate limit exceeded for this user"
+      }
+    },
+    {
+      "DownstreamPathTemplate": "/api/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        { "Host": "ai-server", "Port": 5004 }
+      ],
       "UpstreamPathTemplate": "/api/ai/{everything}",
-      "UpstreamHttpMethod": [
-        "GET",
-        "POST",
-        "PUT",
-        "DELETE",
-        "PATCH"
-      ]
-    } ,{
+      "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE", "PATCH"],
+      "DownstreamHeaderTransform": {
+        "Cookie": "{Headers.Cookie}"
+      },
+      "RateLimitOptions": {
+        "EnableRateLimiting": true,
+        "Period": "10s",
+        "Limit": 2,
+        "ClientIdHeader": "Client-Id",
+        "HttpStatusCode": 429,
+        "QuotaExceededMessage": "Rate limit exceeded for this user"
+      }
+    },
+    {
+      "DownstreamPathTemplate": "/dashboard/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        { "Host": "dashboard-service", "Port": 5006 }
+      ],
+      "UpstreamPathTemplate": "/dashboard/{everything}",
+      "UpstreamHttpMethod": ["GET", "POST"],
+      "DownstreamHeaderTransform": {
+        "Cookie": "{Headers.Cookie}"
+      }
+      // No rate limiting for dashboard
+    },
+    {
       "DownstreamPathTemplate": "/{everything}",
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
-        {
-          "Host": "frontend",
-          "Port": 3000
-        }
+        { "Host": "frontend", "Port": 3000 }
       ],
+      "UpstreamPathTemplate": "/{everything}",
+      "UpstreamHttpMethod": ["GET"],
       "DownstreamHeaderTransform": {
         "Cookie": "{Headers.Cookie}"
-      },
-      "UpstreamPathTemplate": "/{everything}",
-      "UpstreamHttpMethod": [
-        "GET"
-      ]
+      }
+      // Catch-all frontend route, last
     }
   ],
   "GlobalConfiguration": {
-    "RequestIdKey": "X-Request-ID"
+    "RequestIdKey": "X-Request-ID",
+    "RateLimitOptions": {
+      "ClientIdHeader": "Client-Id",
+      "DisableRateLimitHeaders": false
+    }
   }
 }
