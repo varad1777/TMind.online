@@ -248,6 +248,52 @@ export default function AssetDetails({
     }
   };
 
+  const AlertsSection = () => (
+  <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-5">
+    <div className="flex justify-between items-center border-b-2 pb-2">
+      <h3 className="font-bold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2 text-sm uppercase tracking-wide">
+        <AlertCircle className="h-4 w-4" /> Alerts
+      </h3>
+      <Button
+        className="text-sm"
+        onClick={() => navigate(`/Asset/Alerts/${selectedAsset?.assetId}`)}
+      >
+        show Previous Alerts
+      </Button>
+    </div>
+
+    <div className="space-y-3">
+      {alerts?.length ? (
+        alerts.map(alert => (
+          <div
+            key={alert.alertId}
+            className="bg-white dark:bg-slate-700 rounded-lg border-l-4 border-orange-400 p-4"
+          >
+            <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-300">
+                              <strong className="text-slate-900 dark:text-slate-100">{alert.signalName}</strong> spiked from <strong>{formatLocalTime(alert.alertStartUtc)}</strong> to <strong>{formatLocalTime(alert.alertEndUtc)}</strong>.
+                              <br />
+                              <span className="text-xs text-slate-600 dark:text-slate-400 mt-2 block">
+                                Min: <strong>{alert.minObservedValue.toFixed(2)}</strong> | Max: <strong>{alert.maxObservedValue.toFixed(2)}</strong>
+                              </span>
+            </p>
+          </div>
+        ))
+      ) : (
+            <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-4">No Alerts</p>
+        )}
+      </div>
+                    {alerts && alerts.length > 0 && (
+                      <Button onClick={() => analyseAlert(alerts[0].alertStartUtc)} className="w-full mt-4 relative overflow-hidden rounded-lg px-4 py-2 text-sm font-bold text-white bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:brightness-110 shadow-lg transition-all">
+                        <span className="flex items-center justify-center gap-2">
+                          <Sparkles size={16} />
+                          Analyze Alert
+                        </span>
+                      </Button>
+                    )}
+      </div>
+);
+
+
 
 
   return (
@@ -296,9 +342,10 @@ export default function AssetDetails({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 {/* LEFT COLUMN - Devices & Signals */}
-                <div className="space-y-6">
+                <div className="space-y-6 order-1 sm:order-1">
+
                   {/* Connected Devices */}
                   {deviceDetails.length > 0 && (
                     <div className="rounded-lg border border-green-200 dark:border-green-800 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 p-5">
@@ -352,50 +399,15 @@ export default function AssetDetails({
                       )
                     )}
                   </div>
+                  <div className="block sm:hidden">
+                    <AlertsSection />
+                  </div>
                 </div>
 
                 {/* RIGHT COLUMN - Alerts & Analysis */}
-                <div className="space-y-6">
+                <div className="hidden sm:block space-y-6 order-2">
                   {/* Alerts Section */}
-                  <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-5">
-                    <div className="flex justify-between items-center border-b-2 pb-2 -pt-2">
-                      <h3 className="font-bold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2 text-sm uppercase tracking-wide">
-                        <AlertCircle className="h-4 w-4" /> Alerts
-                      </h3>
-                      <Button className="text-sm" onClick={() => navigate(`/Asset/Alerts/${selectedAsset?.assetId}`)}>show Previous Alerts</Button>
-                    </div>
-
-                    <div className="space-y-3">
-                      {Array.isArray(alerts) && alerts.length > 0 ? (
-                        alerts.map((alert) => (
-                          <div
-                            key={alert.alertId}
-                            className="bg-white dark:bg-slate-700 rounded-lg border-l-4 border-orange-400 p-4 hover:shadow-md transition-shadow"
-                          >
-                            <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-300">
-                              <strong className="text-slate-900 dark:text-slate-100">{alert.signalName}</strong> spiked from <strong>{formatLocalTime(alert.alertStartUtc)}</strong> to <strong>{formatLocalTime(alert.alertEndUtc)}</strong>.
-                              <br />
-                              <span className="text-xs text-slate-600 dark:text-slate-400 mt-2 block">
-                                Min: <strong>{alert.minObservedValue.toFixed(2)}</strong> | Max: <strong>{alert.maxObservedValue.toFixed(2)}</strong>
-                              </span>
-                            </p>
-                          </div>
-                        ))
-                      ) : (
-                        <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-4">No Alerts</p>
-                      )}
-                    </div>
-                    {alerts && alerts.length > 0 && (
-                      <Button onClick={() => analyseAlert(alerts[0].alertStartUtc)} className="w-full mt-4 relative overflow-hidden rounded-lg px-4 py-2 text-sm font-bold text-white bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:brightness-110 shadow-lg transition-all">
-                        <span className="flex items-center justify-center gap-2">
-                          <Sparkles size={16} />
-                          Analyze Alert
-                        </span>
-                      </Button>
-                    )}
-                  </div>
-
-
+                  <AlertsSection />
                 </div>
 
               </div>
