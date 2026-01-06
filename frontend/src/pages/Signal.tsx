@@ -84,6 +84,11 @@ export default function Signals() {
   const mainSignalDropdownRef = useRef<HTMLDivElement | null>(null);
   const compareSignalDropdownRef = useRef<HTMLDivElement | null>(null);
   const [isRawView, setIsRawView] = useState(false);
+  const [signalColors, setSignalColors] = useState<{ [key: string]: string }>({});
+  const [yMin, setYMin] = useState<number | null>(null);
+  const [yMax, setYMax] = useState<number | null>(null);
+
+
 
 
  
@@ -123,6 +128,13 @@ export default function Signals() {
     };
     loadHierarchy();
   }, []);
+
+  useEffect(() => {
+  if (yMin !== null && yMax !== null && yMin >= yMax) {
+    setYMax(null);
+  }
+}, [yMin, yMax]);
+
 
 useEffect(() => {
   const handler = (e: MouseEvent) => {
@@ -751,10 +763,26 @@ const zoomOut = () => {
                   )}
 
                   {selectedSignals.length > 0 && (
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      Selected: {selectedSignals.map(s => s.signalName).join(", ")}
-                    </p>
-                  )}
+  <div className="mt-2 space-y-1">
+    {selectedSignals.map(signal => {
+      const key = `${mainAsset?.name}-${signal.signalName}`;
+      return (
+        <div key={signal.signalTypeId} className="flex items-center gap-2">
+          <span className="flex-1">{signal.signalName}</span>
+          <input
+            type="color"
+            value={signalColors[key] ?? colorForString(key)}
+            onChange={e =>
+              setSignalColors(prev => ({ ...prev, [key]: e.target.value }))
+            }
+            className="w-8 h-8 p-0 border-0 rounded"
+          />
+        </div>
+      );
+    })}
+  </div>
+)}
+
                 </div>
 
 
@@ -839,6 +867,28 @@ const zoomOut = () => {
                   </div>
                 )}
               </div>
+              {compareSelectedSignals.length > 0 && (
+  <div className="mt-2 space-y-1">
+    {compareSelectedSignals.map(signal => {
+      const assetObj = allAssets.find(a => a.assetId === compareAssetId);
+      const key = `${assetObj?.name}-${signal.signalName}`;
+      return (
+        <div key={signal.signalTypeId} className="flex items-center gap-2">
+          <span className="flex-1">{signal.signalName}</span>
+          <input
+            type="color"
+            value={signalColors[key] ?? colorForString(key)}
+            onChange={e =>
+              setSignalColors(prev => ({ ...prev, [key]: e.target.value }))
+            }
+            className="w-8 h-8 p-0 border-0 rounded"
+          />
+        </div>
+      );
+    })}
+  </div>
+)}
+
 
 
 
@@ -877,6 +927,42 @@ const zoomOut = () => {
           ) : (
             <>
               <div className="mb-4 space-y-3">
+                
+               {/* 🔹 Y AXIS BOUNDS CONTROLS */}
+      <div className="flex flex-wrap gap-3 items-end">
+        <div>
+          <label className="text-sm font-medium">Y Min</label>
+          <input
+            type="number"
+            value={yMin ?? ""}
+            onChange={e => setYMin(e.target.value ? Number(e.target.value) : null)}
+            className="w-32 rounded-md border px-2 py-1"
+            placeholder="Auto"
+          />
+        </div>
+
+        <div>
+          <label className="text-sm font-medium">Y Max</label>
+          <input
+            type="number"
+            value={yMax ?? ""}
+            onChange={e => setYMax(e.target.value ? Number(e.target.value) : null)}
+            className="w-32 rounded-md border px-2 py-1"
+            placeholder="Auto"
+          />
+        </div>
+
+        <Button
+          variant="outline"
+          onClick={() => {
+            setYMin(null);
+            setYMax(null);
+          }}
+        >
+          Reset Y Bounds
+        </Button>
+      </div>
+
                 <div className="flex flex-wrap gap-3">
                   <Button onClick={zoomOut}>Zoom Out</Button>
                   <Button
@@ -944,7 +1030,13 @@ const zoomOut = () => {
                     dataKey="time"
                     tickFormatter={tick => format(new Date(tick), "MMM dd HH:mm")}
                   />
-                  <YAxis />
+                  <YAxis
+                    domain={[
+                    yMin !== null ? yMin : "auto",
+                    yMax !== null ? yMax : "auto",
+                      ]}
+                  />
+
                   <Tooltip content={<CustomTooltip />} />
                   <Legend />
                  
@@ -964,27 +1056,28 @@ const zoomOut = () => {
                     />
                   )}
                  
-                  {allKeys.map(key => (
-                    <Line
-                      key={key}
-                      type="monotone"
-                      dataKey={key}
-                      stroke={colorForString(key)}
-                      name={key}
-                      dot={
-                        referencePoint && referencePoint.time
-                          ? (props: any) => {
-                              if (props.payload.time === referencePoint.time) {
-                                return <ReferencePointDot {...props} />;
-                              }
-                              return <Dot {...props} r={0} />;
-                            }
-                          : false
-                      }
-                      strokeWidth={2}
-                      activeDot={{ r: 6 }}
-                    />
-                  ))}
+{allKeys.map(key => (
+<Line
+key={key}
+type="monotone"
+dataKey={key}
+stroke={signalColors[key] ?? colorForString(key)}
+name={key}
+dot={
+referencePoint && referencePoint.time
+? (props: any) => {
+if (props.payload.time === referencePoint.time) {
+return <ReferencePointDot {...props} />;
+}
+return <Dot {...props} r={0} />;
+}
+: false
+}
+strokeWidth={2}
+activeDot={{ r: 6 }}
+/>
+))}
+
                  
                   {!isSelectingReference && refAreaLeft && refAreaRight ? (
                     <ReferenceArea x1={refAreaLeft} x2={refAreaRight} strokeOpacity={0.3} />
