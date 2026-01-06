@@ -15,7 +15,8 @@ export default function ProtectedRoute({
 }: {
   children: JSX.Element;
 }) {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+  if (loading) return null;
   const location = useLocation();
 
   if (!user) {

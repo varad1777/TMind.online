@@ -350,9 +350,9 @@ export default function MapDeviceToAsset() {
       </div>
 
       <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>
-        <div className="grid lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Asset Configs */}
-          <Card className="col-span-1">
+          <Card className="lg:col-span-1">
             <CardHeader>
               <CardTitle>Asset Configs</CardTitle>
               <CardDescription>Registers defined for this asset.</CardDescription>
@@ -436,7 +436,7 @@ export default function MapDeviceToAsset() {
           </Card>
 
           {/* Matched Devices */}
-          <Card className="col-span-2">
+          <Card className="lg:col-span-2">
             <CardHeader>
               <CardTitle>Matched Devices / Slaves</CardTitle>
               <CardDescription>Matches returned from the device matching service.</CardDescription>
