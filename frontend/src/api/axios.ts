@@ -31,7 +31,9 @@ api.interceptors.response.use(
       } catch (err:any) {
         console.log("❌ Refresh token failed:", err.response?.data);
         localStorage.removeItem("user");
-        await authApi.post("/User/Logout");
+        try {
+          await authApi.post("/User/Logout");
+        } catch {}
         window.location.href = "/";
         return Promise.reject(err);
       }

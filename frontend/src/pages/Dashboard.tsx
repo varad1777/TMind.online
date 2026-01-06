@@ -155,7 +155,13 @@ export default function Dashboard() {
             <KPICard title="Active Devices" value={deletedDevices} icon={<Cpu className="w-6 h-6" />} borderColor="border-primary" />
           )}
         </div>
-        <div id="kpi-alerts">
+        <div
+            id="kpi-alerts"
+            className="
+              [@media_(min-width:750px)_and_(max-width:1000px)]:col-span-full
+              lg:col-span-1
+            "
+          >
           <KPICard title="Alerts Today" value={alertsToday} icon={<AlertTriangle className="w-6 h-6  text-red-500" />} trend="-3 from yesterday" trendUp={false} borderColor="border-red-400" />
         </div>
       </div>

@@ -428,16 +428,16 @@ const formatToIST = (utcDate) =>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                     File Name
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th className="hidden md:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                     Asset
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th className="hidden md:table-cell py-3 text-left text-xs font-medium text-gray-500 uppercase">
                     Requested At
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th className="hidden md:table-cell py-3 text-left text-xs font-medium text-gray-500 uppercase">
                     Status
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th className="hidden md:table-cell py-3 text-left text-xs font-medium text-gray-500 uppercase">
                     Actions
                   </th>
                 </tr>
@@ -445,18 +445,34 @@ const formatToIST = (utcDate) =>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                 {requestedReports.map((report) => (
                   <tr key={report.reportId} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                    <td className="px-6 py-4 text-sm">{report.fileName}</td>
-                    <td className="px-6 py-4 text-sm">{report.assetName}</td>
                     <td className="px-6 py-4 text-sm">
+                       <div className="flex items-center gap-3">
+                          <span>{report.fileName}</span>
+
+                          {/* Mobile download icon */}
+                          {report.status === "Completed" && (
+                            <button
+                              onClick={() => downloadReport(report.reportId, report.fileName)}
+                              className="md:hidden text-primary hover:text-primary/80"
+                              aria-label={`Download ${report.fileName}`}
+                              title="Download report"
+                            >
+                              <Download className="h-5 w-5" />
+                            </button>
+                          )}
+                        </div>
+                    </td>
+                    <td className="hidden md:table-cell px-6 py-4 text-sm">{report.assetName}</td>
+                    <td className="hidden md:table-cell px-6 py-4 text-sm">
                       {/* {new Date(report.requestedAt).toLocaleString()} */}
                       {formatToIST(report.requestedAt)}
                     </td>
-                    <td className="px-6 py-4 text-sm">
+                    <td className="hidden md:table-cell px-6 py-4 text-sm">
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadge(report.status)}`}>
                         {report.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-sm">
+                    <td className="hidden md:table-cell px-6 py-4 text-sm">
                       {report.status === "Completed" ? (
                         <Button
                           size="sm"

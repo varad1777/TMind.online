@@ -28,7 +28,9 @@ apiAsset.interceptors.response.use(
       } catch (err) {
         console.error("Refresh token failed. Redirecting...");
         localStorage.removeItem("user");
-        await authApi.post("/User/Logout");
+        try {
+          await authApi.post("/User/Logout");
+        } catch {}
         if (window.location.pathname !== "/") {
           window.location.href = "/";
         }
