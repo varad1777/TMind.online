@@ -67,8 +67,8 @@ export const NotificationList = () => {
     },
     {
       root: null,
-      rootMargin: "500px", // prefetch early
-      threshold: 0,
+      rootMargin: "0px",
+      threshold: 0.6,
     }
   );
 
@@ -78,6 +78,10 @@ export const NotificationList = () => {
 
   return () => observer.disconnect();
 }, [hasMore, loading, loadMore]);
+
+useEffect(() => {
+  setFilter(activeTab);
+}, [activeTab]);
 
 
   return (

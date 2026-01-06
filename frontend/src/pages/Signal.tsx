@@ -1,9 +1,10 @@
+
 import React, { useEffect, useMemo, useState,useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { getAssetHierarchy, getSignalOnAsset } from "@/api/assetApi";
 import { getDeviceById } from "@/api/deviceApi";
-import { getTelemetryData, TimeRange } from "@/api/telemetryApi";
+import { getTelemetryData,getRawTelemetryData, TimeRange } from "@/api/telemetryApi";
 import type { Asset, SignalType } from "@/api/assetApi";
 import { getMappingById } from "@/api/assetApi";
 import { Button } from "@/components/ui/button";
@@ -82,6 +83,8 @@ export default function Signals() {
   const [compareSignalDropdownOpen, setCompareSignalDropdownOpen] = useState(false);
   const mainSignalDropdownRef = useRef<HTMLDivElement | null>(null);
   const compareSignalDropdownRef = useRef<HTMLDivElement | null>(null);
+  const [isRawView, setIsRawView] = useState(false);
+
 
  
   // Reference Point States
@@ -143,12 +146,6 @@ useEffect(() => {
 }, []);
 
 
-const [zoomRange, setZoomRange] = useState<{
-  start: string;
-  end: string;
-} | null>(null);
-
-const [isZooming, setIsZooming] = useState(false);
 
   /* ---------------- Load main asset signals & device ---------------- */
   useEffect(() => {
@@ -286,30 +283,12 @@ const toggleCompareSignalSelection = (signal: SignalType) => {
           startDate = today.toISOString();
           endDate = new Date().toISOString();
         } else if (timeRange === "custom") {
-  apiTimeRange = TimeRange.Custom;
-
-  if (isZooming && zoomRange) {
-    startDate = zoomRange.start;
-    endDate = zoomRange.end;
-  } else {
-    startDate = customStart?.toISOString();
-    endDate = customEnd?.toISOString();
-  }
-}
-
- else {
+          apiTimeRange = TimeRange.Custom;
+          startDate = customStart?.toISOString();
+          endDate = customEnd?.toISOString();
+        } else {
           apiTimeRange = TimeRange.Last24Hours;
         }
-
-        console.log("API PAYLOAD", {
-  timeRange,
-  isZooming,
-  zoomRange,
-  customStart,
-  customEnd,
-  startDate,
-  endDate,
-});
 
 
         // Combine all selected signals from both assets
@@ -367,22 +346,10 @@ const toggleCompareSignalSelection = (signal: SignalType) => {
         setDisplayedTelemetryData([]);
       } finally {
         setFetchingData(false);
-        setIsZooming(false);
       }
     };
     fetchTelemetryData();
-  },[
-  mainAsset,
-  compareAssetId,
-  timeRange,
-  customStart,
-  customEnd,
-  zoomRange,
-  isZooming,
-  allAssets,
-  selectedSignals,
-  compareSelectedSignals
-]);
+  }, [mainAsset, compareAssetId, timeRange, customStart, customEnd, allAssets, selectedSignals, compareSelectedSignals]);
 
 
   /* ---------------- Chart Keys ---------------- */
@@ -439,30 +406,13 @@ const toggleCompareSignalSelection = (signal: SignalType) => {
 
 
   /* ---------------- Zoom Functionality ---------------- */
-  // const zoom = () => {
-  //   if (isSelectingReference) return;
-   
-  //   let left = refAreaLeft;
-  //   let right = refAreaRight;
-  //   if (left === right || right === undefined || left === undefined) {
-  //     setRefAreaLeft(undefined);
-  //     setRefAreaRight(undefined);
-  //     return;
-  //   }
-  //   if (left > right) [left, right] = [right, left];
-  //   const zoomedData = displayedTelemetryData.filter(d => d.time >= left && d.time <= right);
-  //   setDisplayedTelemetryData(zoomedData);
-  //   setRefAreaLeft(undefined);
-  //   setRefAreaRight(undefined);
-  // };
-
-const zoom = () => {
+  const zoom = async () => {
   if (isSelectingReference) return;
 
   let left = refAreaLeft;
   let right = refAreaRight;
 
-  if (left == null || right == null || left === right) {
+  if (!left || !right || left === right) {
     setRefAreaLeft(undefined);
     setRefAreaRight(undefined);
     return;
@@ -470,25 +420,64 @@ const zoom = () => {
 
   if (left > right) [left, right] = [right, left];
 
-  setZoomRange({
-    start: new Date(left).toISOString(),
-    end: new Date(right).toISOString(),
-  });
+  setFetchingData(true);
 
-  setIsZooming(true);        // ✅ mark zoom-driven fetch
-  setTimeRange("custom");   // triggers API
+  try {
+    const startDate = new Date(left).toISOString();
+    const endDate = new Date(right).toISOString();
 
-  setRefAreaLeft(undefined);
-  setRefAreaRight(undefined);
+    const allSignals = [...selectedSignals, ...compareSelectedSignals];
+
+    const rawPromises = allSignals.map(signal =>
+      getRawTelemetryData({
+        assetId: signal.assetId,
+        signalTypeId: signal.signalTypeId,
+        timeRange: TimeRange.Custom, // MUST be Custom
+        startDate,
+        endDate,
+      }).then(response => ({
+        ...response,
+        signalName: signal.signalName,
+        assetName:
+          allAssets.find(a => a.assetId === signal.assetId)?.name || "Unknown",
+      }))
+    );
+
+    const results = await Promise.all(rawPromises);
+
+    // Merge raw results into recharts format
+    const timeMap = new Map<number, any>();
+
+    results.forEach(result => {
+      result.values.forEach(point => {
+        const t = new Date(point.time).getTime();
+        if (!timeMap.has(t)) {
+          timeMap.set(t, { time: t });
+        }
+        const row = timeMap.get(t);
+        const key = `${result.assetName}-${result.signalName}`;
+        row[key] = point.value;
+      });
+    });
+
+    const rawChartData = Array.from(timeMap.values()).sort(
+      (a, b) => a.time - b.time
+    );
+
+    setDisplayedTelemetryData(rawChartData);
+    setIsRawView(true);
+  } catch (err) {
+    console.error("Failed to fetch RAW telemetry:", err);
+  } finally {
+    setFetchingData(false);
+    setRefAreaLeft(undefined);
+    setRefAreaRight(undefined);
+  }
 };
 
-
-
-
 const zoomOut = () => {
-  setZoomRange(null);
-  setIsZooming(false);
-  setTimeRange("24h"); // or previous range
+  setDisplayedTelemetryData(fullTelemetryData);
+  setIsRawView(false);
 };
 
 

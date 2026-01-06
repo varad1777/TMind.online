@@ -1,5 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-
+using Microsoft.AspNetCore.Authorization;
 using MappingService.DTOs;
 using MappingService.Domain.Entities;
 using Application.Interface;
@@ -20,6 +20,7 @@ namespace MappingService.Controllers
 
         // POST api/mapping
         [HttpPost]
+          [Authorize]
         public async Task<IActionResult> CreateMapping([FromBody] CreateMappingDto dto)
         {
             if (dto.AssetId == Guid.Empty || dto.DeviceId == Guid.Empty || dto.DevicePortId == Guid.Empty)
@@ -45,6 +46,7 @@ namespace MappingService.Controllers
 
         // GET api/mapping
         [HttpGet]
+          [Authorize]
         public async Task<IActionResult> GetMappings()
         {
             try
@@ -59,6 +61,7 @@ namespace MappingService.Controllers
         }
 
         [HttpDelete("{AssetId}")]
+          [Authorize]
         public async Task<IActionResult> UnAssignDevicesFromAsset(Guid AssetId)
         {
             try
@@ -72,6 +75,7 @@ namespace MappingService.Controllers
         }
 
         [HttpGet("{assetId}")]
+          [Authorize]
         public async Task<IActionResult> GetConfigOnAsset(Guid assetId)
         {
             try
@@ -84,6 +88,7 @@ namespace MappingService.Controllers
             }
         }
         [HttpDelete("/api/deletemap/{mappingId}")]
+          [Authorize]
         public async Task<IActionResult> DeleteMappingAsync(Guid mappingId)
         {
             try

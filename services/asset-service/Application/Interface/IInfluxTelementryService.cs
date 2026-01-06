@@ -17,5 +17,7 @@ namespace Application.Interface
         Task<TelemetryResponseDto> GetTelemetrySeriesAsync(TelemetryRequestDto request);
 
         Task PushToReportRequestQueueAsync(RequestReport dto);
+
+      Task<TelemetryResponseDto> GetRawData(TelemetryRequestDto request);
     }
 }

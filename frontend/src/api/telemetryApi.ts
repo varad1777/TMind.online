@@ -49,6 +49,15 @@ export interface TelemetryRequest {
   endDate?: string;
 }
 
+export interface RawTelemetryRequest {
+  assetId: string;
+  signalTypeId: string;
+  startDate: string;
+  endDate: string;
+  timeRange: TimeRange; // must be Custom (5)
+}
+
+
 // 🔥 Fetch telemetry data
 export const getTelemetryData = async (
   request: TelemetryRequest
@@ -74,6 +83,35 @@ export const getTelemetryData = async (
     throw new Error(error.response?.data?.error || "Failed to fetch telemetry data");
   }
 };
+
+// 🔥 Fetch RAW telemetry data (used for zoom)
+export const getRawTelemetryData = async (
+  request: RawTelemetryRequest
+): Promise<TelemetryResponse> => {
+  try {
+    console.log("🔍 RAW Request payload:", request);
+
+    const response = await axios.post<TelemetryResponse>(
+      `${API_BASE_URL}/TelemetryTest/queryraw`,
+      request,
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    console.log("✅ RAW Response:", response.data);
+    return response.data;
+  } catch (error: any) {
+    console.error("❌ RAW telemetry error:", error);
+    console.error("❌ RAW error response:", error.response);
+    throw new Error(
+      error.response?.data?.error || "Failed to fetch raw telemetry data"
+    );
+  }
+};
+
 
 export const getLastHourData = async (
   assetId: string,

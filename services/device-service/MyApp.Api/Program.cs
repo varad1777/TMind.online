@@ -17,13 +17,13 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-Log.Logger = new LoggerConfiguration()
-    .Enrich.FromLogContext()
-    .Enrich.WithProperty("Service", "device-service")
-    .WriteTo.Console()
-    .WriteTo.Seq(builder.Configuration["Seq:Url"] ?? "http://seq:5341")
-    .CreateLogger();
-builder.Host.UseSerilog();
+// Log.Logger = new LoggerConfiguration()
+//     .Enrich.FromLogContext()
+//     .Enrich.WithProperty("Service", "device-service")
+//     .WriteTo.Console()
+//     .WriteTo.Seq(builder.Configuration["Seq:Url"] ?? "http://seq:5341")
+//     .CreateLogger();
+// builder.Host.UseSerilog();
 
 var jwtConfig = builder.Configuration.GetSection("Jwt");
 

@@ -17,6 +17,7 @@ namespace Api.Controllers
         }
 
         [HttpGet("[action]")]
+        [Authorize]
         public async Task<IActionResult> GetAssetHierarchy()
         {
 

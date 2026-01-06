@@ -4,23 +4,99 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Ocelot.DependencyInjection;
 using Ocelot.Middleware;
+using Serilog;
+using Serilog.Events;
+using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Security.Claims;
+using Serilog.Sinks.MSSqlServer;
+using System.Collections.ObjectModel;
+using System.Data;
+using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
+var authDbConnection = builder.Configuration.GetConnectionString("AuthDbConnection");
 
-// Load configuration
+var columnOptions = new ColumnOptions();
+
+columnOptions.Store.Remove(StandardColumn.Properties);
+columnOptions.Store.Remove(StandardColumn.MessageTemplate);
+columnOptions.Store.Remove(StandardColumn.Level);
+columnOptions.Store.Remove(StandardColumn.Exception);
+columnOptions.Store.Remove(StandardColumn.LogEvent);
+
+// Add our custom columns
+columnOptions.AdditionalColumns = new Collection<SqlColumn>
+{
+    new SqlColumn("UserName", SqlDbType.NVarChar, dataLength: 100),
+    new SqlColumn("Method", SqlDbType.NVarChar, dataLength: 10),
+    new SqlColumn("Path", SqlDbType.NVarChar, dataLength: 200),
+    new SqlColumn("StatusCode", SqlDbType.Int),
+    // new SqlColumn("ElapsedMs", SqlDbType.Int),
+    // new SqlColumn("CallerService", SqlDbType.NVarChar, dataLength: 50)
+};
+// ===================== SERILOG (IMPORTANT) =====================
+// IMPORTANT: Added Console sink so logs are visible in Docker logs
+// IMPORTANT: File path remains same, nothing removed
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Information()
+
+    // Suppress framework noise early
+    .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+    .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Warning)
+    .MinimumLevel.Override("Microsoft.EntityFrameworkCore.Database.Command", LogEventLevel.Warning)
+
+    .Enrich.FromLogContext()
+    .Enrich.WithEnvironmentName()
+    .Enrich.WithThreadId()
+
+    // Console → general useful logs (optional, all logs)
+    .WriteTo.Console()
+
+    // SQL Server → ONLY API request logs
+    .WriteTo.Logger(lc => lc
+        .Filter.ByIncludingOnly(le =>
+            le.Properties.ContainsKey("LogType") &&
+            le.Properties["LogType"].ToString().Contains("ApiRequest"))
+        .WriteTo.MSSqlServer(
+            connectionString: authDbConnection, // string, not IConfigurationSection
+            tableName: "ApiLogs",
+            autoCreateSqlTable: true,
+            columnOptions: columnOptions
+        )
+    )
+
+    // Seq → ONLY API request logs
+    .WriteTo.Logger(lc => lc
+        .Filter.ByIncludingOnly(le =>
+            le.Properties.ContainsKey("LogType") &&
+            le.Properties["LogType"].ToString().Contains("ApiRequest"))
+        .WriteTo.Seq("http://seq")
+    )
+
+    .CreateLogger();
+
+
+
+
+
+// 🔴 THIS LINE IS REQUIRED
+
+
+// ===================== CONFIGURATION =====================
 builder.Configuration
     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
     .AddJsonFile("ocelot.json", optional: false, reloadOnChange: true);
 
 
 
-// Read config values
+// ===================== READ CONFIG VALUES =====================
 var jwtConfig = builder.Configuration.GetSection("Jwt");
 var corsOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>();
 var gatewayUrl = builder.Configuration["Gateway:Url"];
 
 // ===================== VALIDATION (IMPORTANT) =====================
-
 var jwtKey = jwtConfig["Key"];
 var jwtIssuer = jwtConfig["Issuer"];
 var jwtAudience = jwtConfig["Audience"];
@@ -37,10 +113,17 @@ if (string.IsNullOrWhiteSpace(jwtAudience))
 if (corsOrigins == null || corsOrigins.Length == 0)
     throw new InvalidOperationException("CORS AllowedOrigins is missing");
 
+
 // ===================== SERVICES =====================
 
 // Ocelot
-builder.Services.AddOcelot(builder.Configuration);
+// IMPORTANT: DelegatingHandler injects X-Caller-Service: gateway
+// IMPORTANT: register delegating handler
+builder.Services.AddTransient<AddCallerServiceHeaderHandler>();
+
+// Ocelot
+builder.Services.AddOcelot(builder.Configuration)
+    .AddDelegatingHandler<AddCallerServiceHeaderHandler>(true);
 
 // CORS
 builder.Services.AddCors(options =>
@@ -74,7 +157,10 @@ builder.Services
 
             IssuerSigningKey = new SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes(jwtKey)
-            )
+            ),
+         NameClaimType = ClaimTypes.Name,
+            RoleClaimType = ClaimTypes.Role
+             
         };
 
         options.Events = new JwtBearerEvents
@@ -129,6 +215,49 @@ if (!string.IsNullOrWhiteSpace(gatewayUrl))
 }
 
 builder.Services.AddHealthChecks();
+builder.Logging.ClearProviders();
+builder.Logging.AddFilter("Microsoft", LogLevel.Warning);
+builder.Logging.AddFilter("Microsoft.EntityFrameworkCore", LogLevel.Warning);
+builder.Logging.AddFilter("Microsoft.EntityFrameworkCore.Database.Command", LogLevel.None);
+
+// 🔴 Attach Serilog as the ONLY logger
+builder.Host.UseSerilog(Log.Logger);
+builder.Services.AddControllers();
+
+
+builder.Services.AddRateLimiter(options =>
+{
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
+    {
+        // Track per user if authenticated, otherwise by IP
+        var userKey = httpContext.User.Identity?.Name ?? 
+                      httpContext.Connection.RemoteIpAddress?.ToString() ?? "anon";
+
+        return RateLimitPartition.GetFixedWindowLimiter(userKey, _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 1000, // max requests per window
+            Window = TimeSpan.FromMinutes(1),
+            QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+            QueueLimit = 0
+        });
+    });
+
+    options.RejectionStatusCode = 429;
+
+    // Optional: log rejected requests
+    options.OnRejected = async (context, ct) =>
+{
+    // Recompute user/IP key, same as in the limiter
+    var userKey = context.HttpContext.User.Identity?.Name ??
+                  context.HttpContext.Connection.RemoteIpAddress?.ToString() ?? "anon";
+
+    Log.Warning("User/IP {UserKey} exceeded rate limit on {Path}",
+                userKey, context.HttpContext.Request.Path);
+    await Task.CompletedTask;
+};
+
+});
+
 
 
 var app = builder.Build();
@@ -146,9 +275,36 @@ app.UseCors("AllowConfiguredOrigins");
 app.UseWebSockets();
 app.UseAuthentication();
 app.UseAuthorization();
+
+// IMPORTANT:
+// This logs ONLY gateway-level endpoints (health, swagger).
+// Downstream APIs are logged in backend services.
+app.UseMiddleware<RequestLoggingMiddleware>();
+
 app.MapHealthChecks("/health");
+
+app.UseWhen(ctx => ctx.Request.Path.StartsWithSegments("/api"), subApp =>
+{
+    subApp.UseRateLimiter();
+});
 
 // Ocelot MUST be last
 await app.UseOcelot();
 
 app.Run();
+
+
+public class AddCallerServiceHeaderHandler : DelegatingHandler
+{
+    protected override async Task<HttpResponseMessage> SendAsync(
+        HttpRequestMessage request,
+        CancellationToken cancellationToken)
+    {
+        if (!request.Headers.Contains("X-Caller-Service"))
+        {
+            request.Headers.Add("X-Caller-Service", "gateway");
+        }
+
+        return await base.SendAsync(request, cancellationToken);
+    }
+}

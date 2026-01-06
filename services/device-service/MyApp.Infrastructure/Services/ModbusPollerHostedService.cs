@@ -187,30 +187,30 @@ namespace MyApp.Infrastructure.Services
             var device = await db.Devices.Include(d => d.DeviceConfiguration).FirstOrDefaultAsync(d => d.DeviceId == deviceId, ct);
             if (device == null)
             {
-                _log.LogDebug("Device {DeviceId} not found - skipping", deviceId);
+                // _log.LogDebug("Device {DeviceId} not found - skipping", deviceId);
                 return 1000; // safe default
             }
 
             if (device.IsDeleted)
             {
-                _log.LogInformation("Device {DeviceId} is soft-deleted - stopping polling", deviceId);
+                // _log.LogInformation("Device {DeviceId} is soft-deleted - stopping polling", deviceId);
                 return 1000;
             }
 
             if (device.DeviceConfigurationId == null)
             {
-                _log.LogDebug("Device {DeviceId} has no configuration - skipping", device.DeviceId);
+                // _log.LogDebug("Device {DeviceId} has no configuration - skipping", device.DeviceId);
                 return 1000;
             }
 
             var cfg = device.DeviceConfiguration!;
-            _log.LogInformation("Polling device {DeviceId} using config {CfgId}", device.DeviceId, cfg.ConfigurationId);
+            // _log.LogInformation("Polling device {DeviceId} using config {CfgId}", device.DeviceId, cfg.ConfigurationId);
 
             JsonDocument settings;
             try { settings = JsonDocument.Parse(cfg.ProtocolSettingsJson ?? "{}"); }
             catch (Exception ex)
             {
-                _log.LogError(ex, "Invalid ProtocolSettingsJson for device {Device}", device.DeviceId);
+                // _log.LogError(ex, "Invalid ProtocolSettingsJson for device {Device}", device.DeviceId);
                 return cfg.PollIntervalMs > 0 ? cfg.PollIntervalMs : 1000;
             }
 
@@ -224,7 +224,7 @@ namespace MyApp.Infrastructure.Services
 
             if (string.IsNullOrEmpty(ip))
             {
-                _log.LogWarning("Device {DeviceId} ProtocolSettingsJson missing IpAddress. Config: {CfgId}. Skipping poll.", device.DeviceId, cfg.ConfigurationId);
+                // _log.LogWarning("Device {DeviceId} ProtocolSettingsJson missing IpAddress. Config: {CfgId}. Skipping poll.", device.DeviceId, cfg.ConfigurationId);
                 return pollIntervalMs;
             }
 
@@ -491,7 +491,7 @@ namespace MyApp.Infrastructure.Services
                         }
                         catch (Modbus.SlaveException sex)
                         {
-                            _log.LogError(sex, "Modbus SlaveException device {Device} unit={UnitId} start={Start} count={Count}", device.DeviceId, unitId, r.Start, r.Count);
+                            // _log.LogError(sex, "Modbus SlaveException device {Device} unit={UnitId} start={Start} count={Count}", device.DeviceId, unitId, r.Start, r.Count);
 
                             var regsToConsider = r.Items.Select(it => ((Register)it.Register).RegisterId).ToList();
                             try
@@ -503,7 +503,7 @@ namespace MyApp.Infrastructure.Services
                                 {
                                     var id = reg.RegisterId;
                                     int newCount = _failureCounts.AddOrUpdate(id, 1, (_, old) => old + 1);
-                                    _log.LogWarning("Failure count for register {RegisterAddress} (Id={Id}) = {Count}", reg.RegisterAddress, id, newCount);
+                                    // _log.LogWarning("Failure count for register {RegisterAddress} (Id={Id}) = {Count}", reg.RegisterAddress, id, newCount);
 
                                     if (newCount >= _failThreshold && reg.IsHealthy) toMark.Add(id);
                                 }
@@ -513,7 +513,7 @@ namespace MyApp.Infrastructure.Services
                                     var markRegs = await db.Registers.Where(reg => toMark.Contains(reg.RegisterId)).ToListAsync(ct);
                                     foreach (var mr in markRegs) mr.IsHealthy = false;
                                     await db.SaveChangesAsync(ct);
-                                    _log.LogWarning("Marked {Count} registers unhealthy for device {Device}", markRegs.Count, device.DeviceId);
+                                    // _log.LogWarning("Marked {Count} registers unhealthy for device {Device}", markRegs.Count, device.DeviceId);
                                 }
                             }
                             catch (Exception markEx)
@@ -590,16 +590,16 @@ namespace MyApp.Infrastructure.Services
             }
             catch (SocketException s_ex)
             {
-                _log.LogWarning(s_ex, "Device {Device} unreachable {Ip}:{Port}", device.DeviceId, ip, port);
+                // _log.LogWarning(s_ex, "Device {Device} unreachable {Ip}:{Port}", device.DeviceId, ip, port);
             }
             catch (OperationCanceledException) when (ct.IsCancellationRequested)
             {
                 // polling was cancelled via token, simply return
-                _log.LogDebug("Polling cancelled for device {Device}", device.DeviceId);
+                // _log.LogDebug("Polling cancelled for device {Device}", device.DeviceId);
             }
             catch (Exception ex)
             {
-                _log.LogError(ex, "Error polling device {Device}", device.DeviceId);
+                // _log.LogError(ex, "Error polling device {Device}", device.DeviceId);
             }
             finally
             {

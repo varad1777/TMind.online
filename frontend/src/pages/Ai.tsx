@@ -21,7 +21,7 @@ type Msg = {
 export default function AiRcaChat() {
   const [prompt, setPrompt] = useState("");
   const [system, setSystem] = useState("You are an industrial RCA assistant.");
-  const [messages, setMessages] = useState<Msg[]>([{ id: String(Date.now()) + "-u", role: "assistant", fullText: "", displayedText: "hello! I am TMind Assistant, How can I Assist You today?" }]);
+  const [messages, setMessages] = useState<Msg[]>([{ id: String(Date.now()) + "-u", role: "assistant", fullText: "", displayedText: "hello! I am WMind Assistant, How can I Assist You today?" }]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showSystemPrompt, setShowSystemPrompt] = useState(false);
@@ -391,7 +391,7 @@ export default function AiRcaChat() {
               <span className="hidden sm:inline">Send</span>
             </button>
           </div>
-          <p className="pt-2 text-xs text-red-600 font-bold">Warning -<span className="text-gray-600">TMind Assistant can make Mistake</span></p>
+          <p className="pt-2 text-xs text-red-600 font-bold">Warning -<span className="text-gray-600">WMind Assistant can make Mistake</span></p>
         </div>
 
         {/* Sidebar */}
@@ -444,7 +444,7 @@ export default function AiRcaChat() {
               <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
               <p className="text-xs font-medium text-slate-600">API Status</p>
             </div>
-            <p className="text-xs text-slate-500">T am TMind Assistant</p>
+            <p className="text-xs text-slate-500">T am WMind Assistant</p>
           </div>
         </div>
       </div>

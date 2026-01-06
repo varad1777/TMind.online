@@ -7,6 +7,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using Application.DTOs.ReportDTos;
 using Application.Interface;
+using Microsoft.AspNetCore.Authorization;
+
 
 namespace Api.Controllers
 {
@@ -23,9 +25,10 @@ namespace Api.Controllers
             _TelementryService = TelementryService;
         }
 
-        // 1️⃣ Request a new report generation
+   
 
         [HttpPost("ReportRequest")]
+          [Authorize]
         public async Task<IActionResult> GenerateReport([FromBody] RequestReport dto)
         {
             try
@@ -65,8 +68,9 @@ namespace Api.Controllers
             }
         }
 
-        // 2️⃣ List all requested reports
+       
         [HttpGet]
+          [Authorize]
         public async Task<IActionResult> GetAllReports()
         {
             var reports = await _db.ReportRequests
@@ -86,8 +90,9 @@ namespace Api.Controllers
 
 
 
-        // 3️⃣ Download a specific report
+       
         [HttpGet("download/{reportId}")]
+          [Authorize]
         public async Task<IActionResult> DownloadReport(Guid reportId)
         {
             var report = await _db.ReportRequests
