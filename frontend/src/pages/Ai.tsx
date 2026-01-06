@@ -307,7 +307,7 @@ export default function AiRcaChat() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex gap-6 max-w-7xl w-full mx-auto px-6 py-6 overflow-hidden">
+      <div className="flex-1 flex flex-col lg:flex-row gap-6 max-w-7xl w-full mx-auto px-6 py-6 overflow-hidden">
         {/* Chat Section */}
         <div className="flex-1 flex flex-col min-w-0 h-[80%]">
           {/* Messages Container */}
@@ -395,7 +395,18 @@ export default function AiRcaChat() {
         </div>
 
         {/* Sidebar */}
-        <div className="w-80 flex flex-col gap-6">
+        <div
+        className="
+          w-full
+          lg:w-80
+          grid
+          grid-cols-1
+          sm:grid-cols-2
+          lg:grid-cols-1
+          gap-6
+        "
+      >
+
           {/* System Prompt Card */}
           {showSystemPrompt && (
             <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4">
@@ -444,7 +455,7 @@ export default function AiRcaChat() {
               <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
               <p className="text-xs font-medium text-slate-600">API Status</p>
             </div>
-            <p className="text-xs text-slate-500">T am WMind Assistant</p>
+            <p className="text-xs text-slate-500">I am WMind Assistant</p>
           </div>
         </div>
       </div>

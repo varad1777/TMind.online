@@ -9,6 +9,7 @@ import {
   CheckCircle2,
   Clock,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { getDevices, getDeletedDeviced,getAvgApiResponseTime } from "@/api/deviceApi";
 import { getAssetHierarchy } from "@/api/assetApi";
 import { useAuth } from "@/context/AuthContext";
@@ -63,10 +64,16 @@ export default function Dashboard() {
   const { unreadCount } = useNotifications();
   const alertsToday = unreadCount;
   const [avgResponse, setAvgResponse] = useState<number>(0);
-  const { user } = useAuth();
+  const { user,loading: authLoading } = useAuth();
   const isAdmin = user?.role === "Admin";
+  let navigate = useNavigate();
 
   useEffect(() => {
+   
+    if (!user){
+      navigate('/');
+      return;
+    } 
     const fetchDashboardData = async () => {
       try {
         setLoading(true);
@@ -158,7 +165,7 @@ export default function Dashboard() {
         <div
             id="kpi-alerts"
             className="
-              [@media_(min-width:750px)_and_(max-width:1000px)]:col-span-full
+              [@media_(min-width:640px)_and_(max-width:1023px)]:col-span-full
               lg:col-span-1
             "
           >

@@ -205,9 +205,9 @@ export default function ConfigureAsset({ asset, onClose }: ConfigureAssetProps) 
 
        
 
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* left: available signals table */}
-          <div className="col-span-1">
+          <div className="lg:col-span-1">
             <p className="mb-2 font-medium">Available signals (click to add)</p>
             <div className="overflow-auto max-h-[320px] border border-border rounded-lg p-2 bg-background">
               <table className="w-full text-sm table-auto">
@@ -250,7 +250,7 @@ export default function ConfigureAsset({ asset, onClose }: ConfigureAssetProps) 
           </div>
 
           {/* middle: existing staged configs (editable) */}
-          <div className="col-span-1">
+          <div className="lg:col-span-1">
             <p className="mb-2 font-medium">Existing configurations</p>
             <div className="overflow-auto max-h-[320px] space-y-2">
               {configsLoading ? (
@@ -295,7 +295,7 @@ export default function ConfigureAsset({ asset, onClose }: ConfigureAssetProps) 
           </div>
 
           {/* right: staged new signals + save */}
-          <div className="col-span-1">
+          <div className="lg:col-span-1">
             <p className="mb-2 font-medium">Added signals (staged)</p>
             <div className="space-y-2 mb-4 max-h-[220px] overflow-auto">
               {stagedNewSignals.length === 0 ? (

@@ -283,7 +283,7 @@ const [fromUtc, toUtc] = useMemo(() => {
 
   // -------------------- UI --------------------
   return (
-<div className="h-full overflow-hidden bg-gray-50">
+<div className="h-full lg:overflow-hidden bg-gray-50">
       {/* Header */}
 
 <div className="flex items-center justify-between max-w-7xl mx-4 px-0 py-2">
@@ -296,7 +296,7 @@ const [fromUtc, toUtc] = useMemo(() => {
     </p>
   </div>
 
-  <div className="flex gap-3">
+  <div className="flex flex-wrap gap-2 mt-3 md:mt-0">
     <Button onClick={exportCSV} variant="outline" className="gap-2 border-gray-300 hover:bg-gray-50">
       <Download size={16} /> CSV
     </Button>
@@ -395,7 +395,7 @@ const [fromUtc, toUtc] = useMemo(() => {
         {/* Main Content - Left: Signals, Right: Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
           {/* LEFT SIDE - Alert Cards */}
-          <Card className="border-gray-200 w-full lg:col-span-3 shadow-sm h-[520px]">
+  <Card className="border-gray-200 w-full lg:col-span-3 shadow-sm h-[420px] md:h-[520px]">
   <CardContent className="p-4 h-full flex flex-col">
     
     {/* Header (Fixed) */}
@@ -502,14 +502,14 @@ const [fromUtc, toUtc] = useMemo(() => {
 
 
           {/* RIGHT SIDE - Charts */}
-          <div className="lg:col-span-2" ref={chartsRef}>
-  <div className="space-y-4 bg-white p-6 rounded-lg border border-gray-200 shadow-sm h-[520px]">
+          <div className="w-full lg:col-span-2" ref={chartsRef}>
+  <div className="space-y-4 bg-white p-4 md:p-6 rounded-lg border border-gray-200 shadow-sm h-[360px] md:h-[520px]">
     <h2 className="text-xl font-bold text-gray-900">Analytics Charts</h2>
 
     <div className="space-y-2">
       {/* Chart Card */}
       <Card className="border-gray-200 ">
-        <CardContent className="h-80 p-4">
+        <CardContent className="h-64 md:h-80 p-3 md:p-4">
           
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={filtered}>
