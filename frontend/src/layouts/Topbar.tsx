@@ -24,6 +24,7 @@ interface TopbarProps {
 export default function Topbar({ onToggleSidebar }: TopbarProps) {
   const navigate = useNavigate();
   const location = useLocation();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const { logout, user, loading } = useAuth();
   const { unreadCount } = useNotifications();

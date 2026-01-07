@@ -4,7 +4,11 @@ import { ROLE_SIDEBAR_ACCESS } from "../sidebar/roleSidebarConfig";
 import { useAuth } from "@/context/AuthContext";
 import WmindLogo from "../assets/Wmind.png";
 
-export default function Sidebar() {
+interface SidebarProps {
+  onCloseSidebar?: () => void;
+}
+
+export default function Sidebar({ onCloseSidebar }: SidebarProps) {
   const { user } = useAuth();
   const role = user?.role ?? "Viewer";
 
@@ -35,6 +39,11 @@ export default function Sidebar() {
               key={item.key}
               to={item.path}
               id={`sidebar-${item.key}`}
+              onClick={() => {
+              if (window.innerWidth < 1024) {
+                onCloseSidebar?.();
+              }
+            }}
               className={({ isActive }) =>
                 `flex items-center gap-3 p-2 rounded-lg transition ${
                   isActive
