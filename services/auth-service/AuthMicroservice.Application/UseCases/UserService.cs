@@ -111,8 +111,8 @@ namespace AuthMicroservice.Application.UseCases
             if (user == null || !BCrypt.Net.BCrypt.Verify(loginDto.Password, user.PasswordHash))
                 throw new Exception("Invalid email or password.");
 
-            if(user.RefreshToken!=null && user.RefreshTokenExpiry!=null)
-               throw new Exception("User Already Logged In");
+            // if(user.RefreshToken!=null && user.RefreshTokenExpiry!=null)
+            //    throw new Exception("User Already Logged In");
 
             // Generate tokens (you already have this method implemented)
             var (accessToken, refreshToken) = GenerateTokens(user);
@@ -228,13 +228,13 @@ namespace AuthMicroservice.Application.UseCases
 
             var email = identity.FindFirst(ClaimTypes.Email)?.Value;
             var user = await _userRepository.GetByEmailAsync(email);
-            if (user == null)
-            {
-                var oAuthUser = await _oAuthUserRepository.GetByEmailAsync(email);
-                if (oAuthUser != null)
-                    return _mapper.Map<UserDto>(oAuthUser);
-                throw new Exception("User not found.");
-            }
+            // if (user == null)
+            // {
+            //     var oAuthUser = await _oAuthUserRepository.GetByEmailAsync(email);
+            //     if (oAuthUser != null)
+            //         return _mapper.Map<UserDto>(oAuthUser);
+            //     throw new Exception("User not found.");
+            // }
             return _mapper.Map<UserDto>(user);
         }
 
@@ -359,10 +359,10 @@ namespace AuthMicroservice.Application.UseCases
                 throw new Exception("Invalid OTP");
 
             var userrefresh = await _userRepository.GetByEmailAsync(dto.Email);
-            if (userrefresh.RefreshToken != null)
-            {
-                throw new Exception("User Already Logged in");
-            }
+            // if (userrefresh.RefreshToken != null)
+            // {
+            //     throw new Exception("User Already Logged in");
+            // }
 
             otpRecord.IsUsed = true;
             await _userOtpRepository.MarkUse(otpRecord.UserOtpID);

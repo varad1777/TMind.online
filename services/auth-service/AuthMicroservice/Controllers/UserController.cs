@@ -9,7 +9,7 @@ using System.Net.WebSockets;
 using Microsoft.EntityFrameworkCore;
 using AuthMicroservice.Infrastructure.Persistance.DbContexts;
 using Microsoft.Data.SqlClient;
-//localhost:5000
+//localhost
 
 
 
@@ -122,7 +122,7 @@ namespace AuthMicroservice.Controllers
                     Secure = true,
                     SameSite = SameSiteMode.None,
                     Path = "/",
-                     Domain = "localhost:5000", // for local enviornment hange it to localhost ad of rdeployment chaneg to tmin.wonderbiz.org
+                     Domain = "localhost", // for local enviornment hange it to localhost ad of rdeployment chaneg to tmin.wonderbiz.org
                     MaxAge = TimeSpan.FromHours(1)
                 };
                 Response.Cookies.Append("access_token", accessToken, accessCookieOption);
@@ -133,7 +133,7 @@ namespace AuthMicroservice.Controllers
                     Secure = true,
                     SameSite = SameSiteMode.None,
                     Path = "/",
-                    Domain = "localhost:5000",
+                    Domain = "localhost",
                     Expires = DateTime.UtcNow.AddDays(7)
                 };
                 Response.Cookies.Append("refresh_token", refreshToken, refreshCookieOption);
@@ -174,7 +174,7 @@ namespace AuthMicroservice.Controllers
                     Secure = true,
                     SameSite = SameSiteMode.None,
                     Path = "/",
-                    Domain = "localhost:5000",
+                    Domain = "localhost",
                     MaxAge = TimeSpan.FromHours(1)
                 };
                 Response.Cookies.Append("access_token", accessToken, cookieOption);
@@ -217,7 +217,7 @@ namespace AuthMicroservice.Controllers
                     Secure = true,
                     SameSite = SameSiteMode.None,
                     Path = "/",
-                    Domain = "localhost:5000",
+                    Domain = "localhost",
                     Expires = DateTime.UtcNow.AddDays(-1)
                 };
 
@@ -247,7 +247,7 @@ namespace AuthMicroservice.Controllers
                     Secure = true,
                     SameSite = SameSiteMode.None,
                     Path = "/",
-                    Domain = "localhost:5000",
+                    Domain = "localhost",
                     MaxAge = TimeSpan.FromHours(1)
                 });
 
@@ -257,7 +257,7 @@ namespace AuthMicroservice.Controllers
                     Secure = true,
                     SameSite = SameSiteMode.None,
                     Path = "/",
-                    Domain = "localhost:5000",
+                    Domain = "localhost",
                     Expires = DateTime.UtcNow.AddDays(7)
                 });
 
@@ -313,7 +313,7 @@ namespace AuthMicroservice.Controllers
                     Secure = true,
                     SameSite = SameSiteMode.None,
                     Path = "/",
-                    Domain = "localhost:5000",
+                    Domain = "localhost",
                     MaxAge = TimeSpan.FromHours(1)
                 };
                 Response.Cookies.Append("access_token", accessToken, accessCookieOption);
@@ -324,7 +324,7 @@ namespace AuthMicroservice.Controllers
                     Secure = true,
                     SameSite = SameSiteMode.None,
                     Path = "/",
-                    Domain = "localhost:5000",
+                    Domain = "localhost",
                     Expires = DateTime.UtcNow.AddDays(7)
                 };
                 Response.Cookies.Append("refresh_token", refreshToken, refreshCookieOption);
