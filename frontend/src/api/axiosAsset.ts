@@ -27,13 +27,11 @@ apiAsset.interceptors.response.use(
         return apiAsset(originalRequest);
       } catch (err) {
         console.error("Refresh token failed. Redirecting...");
-        localStorage.removeItem("user");
+        // localStorage.removeItem("user");
         try {
           await authApi.post("/User/Logout");
         } catch {}
-        if (window.location.pathname !== "/") {
-          window.location.href = "/";
-        }
+        window.location.href = "/";
         return Promise.reject(err);
       }
     }

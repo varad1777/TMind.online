@@ -8,9 +8,14 @@ const api = axios.create({
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
-    const originalRequest = error.config;
-
-    if (error.response?.status === 401 && !originalRequest._retry) {
+  const originalRequest = error.config;
+  const url = originalRequest.url || "";
+  const skipRefresh =
+      url.includes("/User/me") ||
+      url.includes("/User/login") ||
+      url.includes("/User/logout") ;
+ 
+    if (error.response?.status === 401 && !originalRequest._retry && !skipRefresh) {
       originalRequest._retry = true;
 
       try {
@@ -23,11 +28,12 @@ api.interceptors.response.use(
         return api(originalRequest);
       } catch (err) {
         console.log("Refresh token failed, redirecting to login");
-        localStorage.removeItem("user");
-        try {1
+        // localStorage.removeItem("user");
+        try {
           await api.post("/User/Logout");
         } catch {}
         window.location.href = "/";
+      
         return Promise.reject(err);
       }
     }
