@@ -68,7 +68,7 @@ export const NotificationList = () => {
     {
       root: null,
       rootMargin: "0px",
-      threshold: 0.6,
+      threshold: 0.4,
     }
   );
 
@@ -85,7 +85,7 @@ useEffect(() => {
 
 
   return (
-    <div className="flex flex-col h-full bg-background">
+    <div className="flex flex-col h-screen md:h-full bg-background">
 
       {/* ===================== FILTER BAR ===================== */}
       <div className="border-b border-border px-4 py-3 bg-card flex justify-between items-center">
