@@ -5,7 +5,7 @@ export default function Settings() {
   
     <div className="flex flex-col items-center justify-center h-full w-full">
       <h1>Settings</h1>
-      <p className="text-sm text-muted-foreground text-center mb-2">Update your settings</p>
+      <p className="text-sm text-muted-foreground text-center mb-2">Under Development</p>
     </div>
   );
 }

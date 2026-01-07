@@ -21,7 +21,7 @@ export const ROUTE_PERMISSIONS: Record<string, UserRole[]> = {
   "/manage-user": ["Admin"],
   "/deleted-items": ["Admin"],
 
-  "/settings": ["Admin"],
+  "/settings": ["Admin", "Engineer", "Operator", "User"],
   "/profile": ["Admin", "Engineer", "Operator", "User"],
   "/ai": ["Admin", "Engineer"],
 
