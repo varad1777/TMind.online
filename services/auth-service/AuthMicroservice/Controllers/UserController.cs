@@ -46,7 +46,7 @@ namespace AuthMicroservice.Controllers
             }
         }
 
-        [HttpGet("{id}")]
+        [HttpGet("{id:int}")]
         public async Task<ActionResult> GetUser(int id)
         {
             try
@@ -369,40 +369,58 @@ namespace AuthMicroservice.Controllers
         }
 
 
- [HttpGet("/logs/apilogs")]
-    public async Task<IActionResult> Get(
-        [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 50)
-    {
-        if (page <= 0) page = 1;
-        if (pageSize > 200) pageSize = 200;
+ 
+    [HttpGet("logs")]
+public async Task<IActionResult> Get(
+    [FromQuery] int page = 1,
+    [FromQuery] int pageSize = 50,
+    [FromQuery] string? q = null,              // free-text search
+    [FromQuery] int? statusCode = null,        // exact match
+    [FromQuery] string? method = null)          // GET / POST
+{
+    if (page <= 0) page = 1;
+    if (pageSize > 200) pageSize = 200;
 
-        var sql = @"
-            SELECT
-                Id,
-                TimeStamp,
-                Message,
-                UserName,
-                Method,
-                Path,
-                StatusCode
-            FROM ApiLogs
-            ORDER BY TimeStamp DESC
-            OFFSET @offset ROWS
-            FETCH NEXT @pageSize ROWS ONLY";
+    var offset = (page - 1) * pageSize;
 
-        var offset = (page - 1) * pageSize;
+    var sql = @"
+        SELECT
+            Id,
+            TimeStamp,
+            Message,
+            UserName,
+            Method,
+            Path,
+            StatusCode
+        FROM ApiLogs
+        WHERE 1 = 1
+          AND (@StatusCode IS NULL OR StatusCode = @StatusCode)
+          AND (@Method IS NULL OR Method = @Method)
+          AND (
+                @Q IS NULL
+                OR UserName LIKE '%' + @Q + '%'
+                OR Path     LIKE '%' + @Q + '%'
+                OR Message  LIKE '%' + @Q + '%'
+              )
+        ORDER BY TimeStamp DESC
+        OFFSET @Offset ROWS
+        FETCH NEXT @PageSize ROWS ONLY;
+    ";
 
-        var logs = await _db.Database
-            .SqlQueryRaw<ApiLogDto>(
-                sql,
-                new SqlParameter("@offset", offset),
-                new SqlParameter("@pageSize", pageSize)
-            )
-            .ToListAsync();
+    var logs = await _db.Database
+        .SqlQueryRaw<ApiLogDto>(
+            sql,
+            new SqlParameter("@Offset", offset),
+            new SqlParameter("@PageSize", pageSize),
+            new SqlParameter("@Q", (object?)q ?? DBNull.Value),
+            new SqlParameter("@StatusCode", (object?)statusCode ?? DBNull.Value),
+            new SqlParameter("@Method", (object?)method ?? DBNull.Value)
+        )
+        .ToListAsync();
 
-        return Ok(logs);
-    }
+    return Ok(logs);
+}
+
 
     }
 }
