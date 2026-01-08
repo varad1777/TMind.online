@@ -14,6 +14,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.AspNetCore.Routing;
 using System.Security.Claims;
+using Infrastructure.Email;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -31,6 +32,10 @@ builder.Host.UseSerilog();
 // -------------------------------------------------------
 builder.Services.Configure<TelemetryOptions>(builder.Configuration.GetSection("Telemetry"));
 var configuration = builder.Configuration;
+
+builder.Services.Configure<SmtpSettings>(
+    builder.Configuration.GetSection("SmtpSettings")
+);
 
 // -------------------------------------------------------
 //  MAIN DB (FACTORY)
@@ -142,6 +147,7 @@ builder.Services.AddScoped<BackfillService>();
 builder.Services.AddScoped<IAssetHierarchyService, AssetHierarchyService>();
 builder.Services.AddScoped<IAssetConfiguration, AssetConfigurationService>();
 builder.Services.AddScoped<IMappingService, AssetMappingService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
 
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddHostedService<ExpiredNotificationCleanupService>();
