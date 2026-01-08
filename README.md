@@ -160,7 +160,6 @@ WMIND follows a **distributed microservice architecture** to ensure scalability,
 
 ### 🔐 **Security**
 - ✅ JWT-based authentication
-- ✅ Two-Factor Authentication (2FA)
 - ✅ Role-based access control
 - ✅ Secure REST APIs
 
