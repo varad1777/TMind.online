@@ -16,6 +16,8 @@ export default function AddRoot({ onClose, onAdd }: AddRootProps) {
   const [errorMsg, setErrorMsg] = useState("");
   const [loading, setLoading] = useState(false);
   const [isValid, setIsValid] = useState(false);
+  const [touched, setTouched] = useState(false);
+
 
   const validateName = (value: string) => {
     const trimmed = value.trim();
@@ -41,6 +43,7 @@ export default function AddRoot({ onClose, onAdd }: AddRootProps) {
   }, [name]);
 
   const handleAdd = async () => {
+    setTouched(true);
     if (!isValid) return;
 
     setLoading(true);
@@ -83,10 +86,11 @@ export default function AddRoot({ onClose, onAdd }: AddRootProps) {
                   placeholder="Enter root asset name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
+                  onBlur={() => setTouched(true)} 
                 />
 
                 {/* 🔥 LIVE VALIDATION MESSAGE */}
-                {errorMsg && (
+                {touched && errorMsg && (
                   <p className="text-red-500 text-sm mt-1">{errorMsg}</p>
                 )}
               </div>
