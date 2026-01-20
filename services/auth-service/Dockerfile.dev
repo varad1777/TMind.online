@@ -1,11 +1,20 @@
+# Use full SDK for development
 FROM mcr.microsoft.com/dotnet/sdk:9.0
 
 WORKDIR /app
 
+# Copy everything (solution + all projects)
+COPY . .
+
+# Restore dependencies
+RUN dotnet restore AuthMicroservice.sln
+
+# Set dev environment
 ENV ASPNETCORE_ENVIRONMENT=Development
 ENV ASPNETCORE_URLS=http://0.0.0.0:5001
 ENV DOTNET_USE_POLLING_FILE_WATCHER=1
 
 EXPOSE 5001
 
-CMD ["dotnet", "watch", "--project", "AuthMicroservice/AuthMicroservice.csproj", "run", "--no-launch-profile"]
+# Run with hot reload
+CMD ["dotnet", "watch", "--project", "AuthMicroservice/AuthMicroservice.csproj", "run", "--no-launch-profile", "--urls", "http://0.0.0.0:5001"]

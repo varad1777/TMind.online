@@ -4,11 +4,11 @@ WORKDIR /app
 
 # copy only csproj first for restore cache
 COPY *.csproj ./
-RUN dotnet restore
 
 # copy everything else
 COPY . .
 
+RUN dotnet restore
 ENV ASPNETCORE_URLS=http://0.0.0.0:5000
 ENV ASPNETCORE_ENVIRONMENT=Development
 

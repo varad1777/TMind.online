@@ -6,10 +6,10 @@ WORKDIR /app
 COPY TataPlant.sln .
 COPY MyApp.Api/MyApp.Api.csproj MyApp.Api/
 
-RUN dotnet restore TataPlant.sln
 
 # Copy the rest of the source
 COPY . .
+RUN dotnet restore TataPlant.sln
 
 ENV ASPNETCORE_URLS=http://0.0.0.0:5002
 ENV ASPNETCORE_ENVIRONMENT=Development

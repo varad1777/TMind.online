@@ -1,13 +1,11 @@
 networks:
   tmind-net:
 
-
 volumes:
   tminddb:
   influxdb:
   rabbitmq:
   qdrant:
-
 
 services:
 
@@ -22,9 +20,14 @@ services:
       - tminddb:/var/opt/mssql
     ports:
       - "1433:1433"
-    networks: [ tmind-net ]
+    networks:
+      - tmind-net
     healthcheck:
-      test: [ "CMD-SHELL", "timeout 2 bash -c '</dev/tcp/127.0.0.1/1433' || exit 1" ]
+      test:
+        [
+          "CMD-SHELL",
+          "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$SA_PASSWORD\" -C -Q \"SELECT 1\" || exit 1"
+        ]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -36,9 +39,10 @@ services:
       - "8086:8086"
     volumes:
       - influxdb:/var/lib/influxdb2
-    networks: [ tmind-net ]
+    networks:
+      - tmind-net
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8086/health" ]
+      test: ["CMD", "curl", "-f", "http://localhost:8086/health"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -53,12 +57,13 @@ services:
       - "15672:15672"
     volumes:
       - rabbitmq:/var/lib/rabbitmq
-    networks: [ tmind-net ]
+    networks:
+      - tmind-net
     healthcheck:
-      test: [ "CMD", "rabbitmq-diagnostics", "-q", "ping" ]
-      interval: 10s
-      timeout: 5s
-      retries: 10
+      test: rabbitmq-diagnostics check_port_connectivity
+      interval: 1s
+      timeout: 3s
+      retries: 30
 
   qdrant:
     image: qdrant/qdrant:latest
@@ -67,7 +72,8 @@ services:
       - "6334:6334"
     volumes:
       - qdrant:/qdrant/storage
-    networks: [ tmind-net ]
+    networks:
+      - tmind-net
     healthcheck:
       test:
         - CMD
@@ -82,21 +88,21 @@ services:
 
   auth-service:
     build: ./services/auth-service
-    ports:
-      - "5001"
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ConnectionStrings__AuthDbConnection: >
-        Server=tmind-sql,1433; Database=TmindDB2Auth; User Id=sa; Password=${SA_PASSWORD}; TrustServerCertificate=True;
+        Server=tmind-sql,1433; Database=TmindDB2Auth; User Id=sa;
+        Password=${SA_PASSWORD}; TrustServerCertificate=True;
       Jwt__Key: ${JWT_KEY}
       Jwt__Issuer: AssetNodeAPI
       Jwt__Audience: AssetNodeClient
     depends_on:
       tmind-sql:
         condition: service_healthy
-    networks: [ tmind-net ]
+    networks:
+      - tmind-net
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://auth-service:5001/health" ]
+      test: ["CMD", "curl", "-f", "http://auth-service:5001/health"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -107,19 +113,15 @@ services:
     ports:
       - "5341:80"
     environment:
-      ACCEPT_EULA: "Y"                         # Accept Seq license
-      SEQ_FIRSTRUN_ADMINPASSWORD: "YourPasswordHere"   # Set first admin password
+      ACCEPT_EULA: "Y"
+      SEQ_FIRSTRUN_ADMINPASSWORD: "YourPasswordHere"
     volumes:
       - ./logs/seq:/data
     networks:
       - tmind-net
 
-
-
   device-service:
     build: ./services/device-service
-    ports:
-      - "5002"
     depends_on:
       tmind-sql:
         condition: service_healthy
@@ -128,9 +130,11 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ConnectionStrings__DeviceDbConnection: >
-        Server=tmind-sql,1433; Database=TmindDB2; User Id=sa; Password=${SA_PASSWORD}; TrustServerCertificate=True;
+        Server=tmind-sql,1433; Database=TmindDB2; User Id=sa;
+        Password=${SA_PASSWORD}; TrustServerCertificate=True;
       ConnectionStrings__AssetDbConnection: >
-        Server=tmind-sql,1433; Database=TmindDB2Asset; User Id=sa; Password=${SA_PASSWORD}; TrustServerCertificate=True;
+        Server=tmind-sql,1433; Database=TmindDB2Asset; User Id=sa;
+        Password=${SA_PASSWORD}; TrustServerCertificate=True;
       RabbitMQ__Host: rabbitmq
       RabbitMQ__User: ${RABBIT_USER}
       RabbitMQ__Pass: ${RABBIT_PASS}
@@ -138,17 +142,21 @@ services:
       Jwt__Key: ${JWT_KEY}
       Jwt__Issuer: AssetNodeAPI
       Jwt__Audience: AssetNodeClient
-    networks: [ tmind-net ]
+    networks:
+      - tmind-net
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://device-service:5002/health" ]
-      interval: 10s
+      test: ["CMD", "curl", "-f", "http://device-service:5002/health"]
+      interval: 20s
       timeout: 5s
-      retries: 10
+      retries: 15
+    restart: on-failure
+    command: >
+      /app/wait-for-it.sh rabbitmq:5672 --strict --timeout=60 -- 
+      && /app/wait-for-it.sh influxdb:8086 --strict --timeout=60 -- 
+      && dotnet DeviceService.dll
 
   asset-service:
     build: ./services/asset-service
-    ports:
-      - "5003"
     depends_on:
       tmind-sql:
         condition: service_healthy
@@ -159,9 +167,11 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ConnectionStrings__AssetDbConnection: >
-        Server=tmind-sql,1433; Database=TmindDB2Asset; User Id=sa; Password=${SA_PASSWORD}; TrustServerCertificate=True;
+        Server=tmind-sql,1433; Database=TmindDB2Asset; User Id=sa;
+        Password=${SA_PASSWORD}; TrustServerCertificate=True;
       ConnectionStrings__AuthDbConnection: >
-        Server=tmind-sql,1433; Database=TmindDB2Auth; User Id=sa; Password=${SA_PASSWORD}; TrustServerCertificate=True;
+        Server=tmind-sql,1433; Database=TmindDB2Auth; User Id=sa;
+        Password=${SA_PASSWORD}; TrustServerCertificate=True;
       Telemetry__RabbitHost: rabbitmq
       Telemetry__RabbitUser: ${RABBIT_USER}
       Telemetry__RabbitPass: ${RABBIT_PASS}
@@ -174,12 +184,18 @@ services:
       Jwt__Key: ${JWT_KEY}
       Jwt__Issuer: AssetNodeAPI
       Jwt__Audience: AssetNodeClient
-    networks: [ tmind-net ]
+    networks:
+      - tmind-net
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://asset-service:5003/health" ]
-      interval: 10s
+      test: ["CMD", "curl", "-f", "http://asset-service:5003/health"]
+      interval: 20s
       timeout: 5s
-      retries: 10
+      retries: 15 
+    restart: on-failure
+    command: >
+      /app/wait-for-it.sh rabbitmq:5672 --strict --timeout=60 -- 
+      && /app/wait-for-it.sh influxdb:8086 --strict --timeout=60 -- 
+      && dotnet DeviceService.dll
 
   gateway:
     build: ./gateway
@@ -188,32 +204,38 @@ services:
     volumes:
       - ./logs/gateway:/app/logs
     depends_on:
-      - auth-service
-      - device-service
-      - asset-service
+      auth-service:
+        condition: service_healthy
+      device-service:
+        condition: service_healthy
+      asset-service:
+        condition: service_healthy
     environment:
-      ConnectionStrings__AuthDbConnection: >
-        Server=tmind-sql,1433; Database=TmindDB2Auth; User Id=sa; Password=${SA_PASSWORD}; TrustServerCertificate=True;
       ASPNETCORE_ENVIRONMENT: Production
       Gateway__Url: http://0.0.0.0:5000
+      ConnectionStrings__AuthDbConnection: >
+        Server=tmind-sql,1433; Database=TmindDB2Auth; User Id=sa;
+        Password=${SA_PASSWORD}; TrustServerCertificate=True;
       Jwt__Key: ${JWT_KEY}
       Jwt__Issuer: AssetNodeAPI
       Jwt__Audience: AssetNodeClient
-    networks: [ tmind-net ]
+    networks:
+      - tmind-net
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://gateway:5000/health" ]
+      test: ["CMD", "curl", "-f", "http://gateway:5000/health"]
       interval: 10s
       timeout: 5s
       retries: 10
 
   ai-server:
     build: ./ai-server
-    ports:
-      - "5004:5004"
     depends_on:
-      - tmind-sql
-      - influxdb
-      - qdrant
+      tmind-sql:
+        condition: service_healthy
+      influxdb:
+        condition: service_healthy
+      qdrant:
+        condition: service_healthy
     environment:
       PORT: 5004
       SQL_SERVER_HOST: tmind-sql
@@ -227,9 +249,10 @@ services:
       GROQ_API_KEY: ${GROQ_API_KEY}
       GEMINI_API_KEY: ${GEMINI_API_KEY}
       GROQ_MODEL: llama-3.1-8b-instant
-    networks: [ tmind-net ]
+    networks:
+      - tmind-net
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://ai-server:5004/health" ]
+      test: ["CMD", "curl", "-f", "http://ai-server:5004/health"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -239,10 +262,9 @@ services:
       context: ./frontend
       args:
         VITE_API_URL:
-    ports:
-      - "3001:3000"
     depends_on:
       - gateway
     environment:
       VITE_API_URL: http://localhost:5000
-    networks: [ tmind-net ]
+    networks:
+      - tmind-net
