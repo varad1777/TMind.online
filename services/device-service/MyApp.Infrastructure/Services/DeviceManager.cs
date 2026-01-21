@@ -843,6 +843,72 @@ namespace MyApp.Infrastructure.Services
             return result;
         }
 
+        //to get device configurations using gateway id 
+        public async Task<List<DeviceConfigurationResponseDto>>GetDeviceConfigurationsByGatewayAsync(Guid gatewayId,CancellationToken ct = default)
+        {
+            if (gatewayId == Guid.Empty)
+                throw new ArgumentException("GatewayId cannot be empty.", nameof(gatewayId));
+
+            // STEP 1: Get mapped DeviceIds from Asset DB
+            var deviceIds = await _assetDb.MappingTable
+                .AsNoTracking()
+                .Where(m => m.AssetId == gatewayId)
+                .Select(m => m.DeviceId)
+                .Distinct()
+                .ToListAsync(ct);
+
+            if (!deviceIds.Any())
+                return new List<DeviceConfigurationResponseDto>();
+
+            // STEP 2: Load devices from Device DB
+            var devices = await _db.Devices
+                .AsNoTracking()
+                .Where(d => deviceIds.Contains(d.DeviceId) && !d.IsDeleted)
+                .Include(d => d.DeviceConfiguration)
+                .Include(d => d.DeviceSlave)
+                    .ThenInclude(s => s.Registers)
+                .ToListAsync(ct);
+
+            // STEP 3: Map to DTO
+            var result = devices.Select(device => new DeviceConfigurationResponseDto
+            {
+                DeviceId = device.DeviceId,
+                Name = device.Name,
+                Protocol = device.Protocol ?? string.Empty,
+                PollIntervalMs = device.DeviceConfiguration?.PollIntervalMs ?? 1000,
+                ProtocolSettingsJson = device.DeviceConfiguration?.ProtocolSettingsJson ?? "{}",
+
+                Slaves = device.DeviceSlave
+                    .Where(s => s.IsHealthy)
+                    .Select(s => new SlaveDto
+                    {
+                        DeviceSlaveId = s.deviceSlaveId,
+                        SlaveIndex = s.slaveIndex,
+                        IsHealthy = s.IsHealthy,
+
+                        Registers = s.Registers
+                            .Where(r => r.IsHealthy)
+                            .OrderBy(r => r.RegisterAddress)
+                            .Select(r => new DeviceRegisterDto
+                            {
+                                RegisterId = r.RegisterId,
+                                RegisterAddress = r.RegisterAddress,
+                                RegisterLength = r.RegisterLength,
+                                DataType = r.DataType,
+                                Scale = r.Scale,
+                                Unit = r.Unit,
+                                ByteOrder = r.ByteOrder,
+                                WordSwap = r.WordSwap,
+                                IsHealthy = r.IsHealthy
+                            })
+                            .ToList()
+                    })
+                    .ToList()
+            }).ToList();
+
+            return result;
+        }
+
 
     }
 }

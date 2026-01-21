@@ -45,5 +45,10 @@ namespace MyApp.Application.Interfaces
         Task<Guid> AddPortAsync(Guid deviceId, AddPortDto dto, CancellationToken ct = default);
         Task<BulkCreateDeviceResultDto> CreateDevicesBulkAsync(BulkCreateDeviceDto request, CancellationToken ct = default);
 
+
+        //to get device configurations 
+        Task<List<DeviceConfigurationResponseDto>> GetDeviceConfigurationsByGatewayAsync(Guid gatewayId,CancellationToken ct = default);
+
+
     }
 }
