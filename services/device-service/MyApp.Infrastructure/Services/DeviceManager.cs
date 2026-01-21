@@ -844,30 +844,38 @@ namespace MyApp.Infrastructure.Services
         }
 
         //to get device configurations using gateway id 
-        public async Task<List<DeviceConfigurationResponseDto>>GetDeviceConfigurationsByGatewayAsync(Guid gatewayId,CancellationToken ct = default)
+        public async Task<List<DeviceConfigurationResponseDto>> GetDeviceConfigurationsByGatewayAsync(Guid gatewayId,CancellationToken ct = default)
         {
             if (gatewayId == Guid.Empty)
                 throw new ArgumentException("GatewayId cannot be empty.", nameof(gatewayId));
 
-            // STEP 1: Get mapped DeviceIds from Asset DB
-            var deviceIds = await _assetDb.MappingTable
+            // STEP 1: Get all devices whose GatewayId matches
+            var devicesQuery = _db.Devices
+                .AsNoTracking()
+                .Where(d => d.GatewayId == gatewayId && !d.IsDeleted)
+                .Include(d => d.DeviceConfiguration)
+                .Include(d => d.DeviceSlave)
+                    .ThenInclude(s => s.Registers);
+
+            var devices = await devicesQuery.ToListAsync(ct);
+
+            if (!devices.Any())
+                return new List<DeviceConfigurationResponseDto>();
+
+            // STEP 2: Filter devices by mapping table (only mapped devices)
+            var mappedDeviceIds = await _assetDb.MappingTable
                 .AsNoTracking()
                 .Where(m => m.AssetId == gatewayId)
                 .Select(m => m.DeviceId)
                 .Distinct()
                 .ToListAsync(ct);
 
-            if (!deviceIds.Any())
-                return new List<DeviceConfigurationResponseDto>();
+            devices = devices
+                .Where(d => mappedDeviceIds.Contains(d.DeviceId))
+                .ToList();
 
-            // STEP 2: Load devices from Device DB
-            var devices = await _db.Devices
-                .AsNoTracking()
-                .Where(d => deviceIds.Contains(d.DeviceId) && !d.IsDeleted)
-                .Include(d => d.DeviceConfiguration)
-                .Include(d => d.DeviceSlave)
-                    .ThenInclude(s => s.Registers)
-                .ToListAsync(ct);
+            if (!devices.Any())
+                return new List<DeviceConfigurationResponseDto>();
 
             // STEP 3: Map to DTO
             var result = devices.Select(device => new DeviceConfigurationResponseDto
@@ -885,7 +893,6 @@ namespace MyApp.Infrastructure.Services
                         DeviceSlaveId = s.deviceSlaveId,
                         SlaveIndex = s.slaveIndex,
                         IsHealthy = s.IsHealthy,
-
                         Registers = s.Registers
                             .Where(r => r.IsHealthy)
                             .OrderBy(r => r.RegisterAddress)
@@ -908,6 +915,8 @@ namespace MyApp.Infrastructure.Services
 
             return result;
         }
+
+
 
 
     }
