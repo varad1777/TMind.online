@@ -850,29 +850,35 @@ namespace MyApp.Infrastructure.Services
                 throw new ArgumentException("GatewayId cannot be empty.", nameof(gatewayId));
 
             // STEP 1: Get all devices whose GatewayId matches
-            var devicesQuery = _db.Devices
+            var gatewayDeviceIds = await _db.Devices
                 .AsNoTracking()
                 .Where(d => d.GatewayId == gatewayId && !d.IsDeleted)
-                .Include(d => d.DeviceConfiguration)
-                .Include(d => d.DeviceSlave)
-                    .ThenInclude(s => s.Registers);
+                .Select(d => d.DeviceId)
+                .ToListAsync(ct);
 
-            var devices = await devicesQuery.ToListAsync(ct);
-
-            if (!devices.Any())
+            if (!gatewayDeviceIds.Any())
                 return new List<DeviceConfigurationResponseDto>();
+
 
             // STEP 2: Filter devices by mapping table (only mapped devices)
             var mappedDeviceIds = await _assetDb.MappingTable
                 .AsNoTracking()
-                .Where(m => m.AssetId == gatewayId)
+                .Where(m => gatewayDeviceIds.Contains(m.DeviceId))
                 .Select(m => m.DeviceId)
                 .Distinct()
                 .ToListAsync(ct);
 
-            devices = devices
+            if (!mappedDeviceIds.Any())
+                return new List<DeviceConfigurationResponseDto>();
+
+            var devices = await _db.Devices
+                .AsNoTracking()
                 .Where(d => mappedDeviceIds.Contains(d.DeviceId))
-                .ToList();
+                .Include(d => d.DeviceConfiguration)
+                .Include(d => d.DeviceSlave)
+                .ThenInclude(s => s.Registers)
+                .ToListAsync(ct);
+
 
             if (!devices.Any())
                 return new List<DeviceConfigurationResponseDto>();
