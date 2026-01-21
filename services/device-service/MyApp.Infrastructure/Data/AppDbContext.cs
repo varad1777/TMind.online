@@ -15,6 +15,8 @@ namespace MyApp.Infrastructure.Data
 
         public DbSet<ApiLog> ApiLogs => Set<ApiLog>();
 
+         public DbSet<Gateway> Gateway => Set<Gateway>();
+
         protected override void OnModelCreating(ModelBuilder mb)
         {
             // DEVICE

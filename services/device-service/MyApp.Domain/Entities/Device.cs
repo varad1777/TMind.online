@@ -7,6 +7,8 @@ namespace MyApp.Domain.Entities
     {
         [Key]
         public Guid DeviceId { get; set; } = Guid.NewGuid();
+
+        public Guid GatewayId {get; set;}
         public string Name { get; set; } = null!;
         public string? Description { get; set; }
         public string? Protocol { get; set; } = "ModbusTCP";
