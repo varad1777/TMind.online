@@ -120,10 +120,10 @@ namespace AuthMicroservice.Controllers
                 var accessCookieOption = new CookieOptions
                 {
                     HttpOnly = true,
-                    Secure = true,
-                    SameSite = SameSiteMode.None,
+                    Secure = false,
+                    SameSite = SameSiteMode.Lax,
                     Path = "/",
-                     Domain = "localhost", // for local enviornment hange it to localhost ad of rdeployment chaneg to tmin.wonderbiz.org
+                    //Domain = "localhost", // for local enviornment hange it to localhost ad of rdeployment chaneg to tmin.wonderbiz.org
                     MaxAge = TimeSpan.FromHours(1)
                 };
                 Response.Cookies.Append("access_token", accessToken, accessCookieOption);
@@ -131,10 +131,10 @@ namespace AuthMicroservice.Controllers
                 var refreshCookieOption = new CookieOptions
                 {
                     HttpOnly = true,
-                    Secure = true,
-                    SameSite = SameSiteMode.None,
+                    Secure = false,
+                    SameSite = SameSiteMode.Lax,
                     Path = "/",
-                    Domain = "localhost",
+                    //Domain = "localhost",
                     Expires = DateTime.UtcNow.AddDays(7)
                 };
                 Response.Cookies.Append("refresh_token", refreshToken, refreshCookieOption);
@@ -172,10 +172,10 @@ namespace AuthMicroservice.Controllers
                 var cookieOption = new CookieOptions
                 {
                     HttpOnly = true,
-                    Secure = true,
-                    SameSite = SameSiteMode.None,
+                    Secure = false,
+                    SameSite = SameSiteMode.Lax,
                     Path = "/",
-                    Domain = "localhost",
+                    //Domain = "localhost",
                     MaxAge = TimeSpan.FromHours(1)
                 };
                 Response.Cookies.Append("access_token", accessToken, cookieOption);
@@ -215,10 +215,10 @@ namespace AuthMicroservice.Controllers
                 var cookieOptions = new CookieOptions
                 {
                     HttpOnly = true,
-                    Secure = true,
-                    SameSite = SameSiteMode.None,
+                    Secure = false,
+                    SameSite = SameSiteMode.Lax,
                     Path = "/",
-                    Domain = "localhost",
+                    //Domain = "localhost",
                     Expires = DateTime.UtcNow.AddDays(-1)
                 };
 
@@ -245,20 +245,20 @@ namespace AuthMicroservice.Controllers
                 Response.Cookies.Append("access_token", accessToken, new CookieOptions
                 {
                     HttpOnly = true,
-                    Secure = true,
-                    SameSite = SameSiteMode.None,
+                    Secure = false,
+                    SameSite = SameSiteMode.Lax,
                     Path = "/",
-                    Domain = "localhost",
+                    //Domain = "localhost",
                     MaxAge = TimeSpan.FromHours(1)
                 });
 
                 Response.Cookies.Append("refresh_token", newRefreshToken, new CookieOptions
                 {
                     HttpOnly = true,
-                    Secure = true,
-                    SameSite = SameSiteMode.None,
+                    Secure = false,
+                    SameSite = SameSiteMode.Lax,
                     Path = "/",
-                    Domain = "localhost",
+                    //Domain = "localhost",
                     Expires = DateTime.UtcNow.AddDays(7)
                 });
 
@@ -311,10 +311,10 @@ namespace AuthMicroservice.Controllers
                 var accessCookieOption = new CookieOptions
                 {
                     HttpOnly = true,
-                    Secure = true,
-                    SameSite = SameSiteMode.None,
+                    Secure = false,
+                    SameSite = SameSiteMode.Lax,
                     Path = "/",
-                    Domain = "localhost",
+                    //Domain = "localhost",
                     MaxAge = TimeSpan.FromHours(1)
                 };
                 Response.Cookies.Append("access_token", accessToken, accessCookieOption);
@@ -322,10 +322,10 @@ namespace AuthMicroservice.Controllers
                 var refreshCookieOption = new CookieOptions
                 {
                     HttpOnly = true,
-                    Secure = true,
-                    SameSite = SameSiteMode.None,
+                    Secure = false,
+                    SameSite = SameSiteMode.Lax,
                     Path = "/",
-                    Domain = "localhost",
+                    //Domain = "localhost",
                     Expires = DateTime.UtcNow.AddDays(7)
                 };
                 Response.Cookies.Append("refresh_token", refreshToken, refreshCookieOption);
