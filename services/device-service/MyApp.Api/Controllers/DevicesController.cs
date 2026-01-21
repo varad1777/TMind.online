@@ -63,7 +63,7 @@ namespace MyApp.Api.Controllers
         // GET /api/devices
         [HttpGet]
         [AllowAnonymous]
-        [Authorize]
+        
         public async Task<IActionResult> GetAll(
             int pageNumber = 1,
             int pageSize = 10,
@@ -474,6 +474,34 @@ namespace MyApp.Api.Controllers
             CancellationToken ct = default)
         {
             if (gatewayId == Guid.Empty)
+                return BadRequest(ApiResponse<object>.Fail("GatewayId is required."));
+
+            try
+            {
+                var result = await _mgr.GetDeviceConfigurationsByGatewayAsync(gatewayId, ct);
+                return Ok(ApiResponse<object>.Ok(result));
+            }
+            catch (Exception ex)
+            {
+                _log.LogError(ex, "Get device configurations failed for gateway {GatewayId}", gatewayId);
+                return StatusCode(
+                    (int)HttpStatusCode.InternalServerError,
+                    ApiResponse<object>.Fail("An unexpected error occurred.")
+                );
+            }
+        }
+
+
+
+
+
+        [HttpGet("configurations/gateway/{gatewayId}")]
+        //[Authorize]
+        public async Task<IActionResult> GetConfigurationsByGateway(
+           string gatewayId,
+           CancellationToken ct = default)
+        {
+            if (string.IsNullOrEmpty(gatewayId))
                 return BadRequest(ApiResponse<object>.Fail("GatewayId is required."));
 
             try

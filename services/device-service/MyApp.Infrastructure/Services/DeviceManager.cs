@@ -27,6 +27,9 @@ namespace MyApp.Infrastructure.Services
             var name = (request.Name ?? string.Empty).Trim();
             if (string.IsNullOrEmpty(name)) throw new ArgumentException("Device name is required.", nameof(request.Name));
 
+            if (string.IsNullOrEmpty(request.GatewayClientId))
+                throw new ArgumentException("Gateway Client is REquired", nameof(request.GatewayClientId));
+
             const int MaxDevices = 20;
             var currentCount = await _db.Devices.CountAsync(d => !d.IsDeleted, ct);
             if (currentCount >= MaxDevices)
@@ -44,7 +47,8 @@ namespace MyApp.Infrastructure.Services
             {
                 DeviceId = Guid.NewGuid(),
                 Name = name,
-                Description = string.IsNullOrWhiteSpace(request.Description) ? null : request.Description.Trim()
+                Description = string.IsNullOrWhiteSpace(request.Description) ? null : request.Description.Trim(),
+                GatewayId=request.GatewayClientId.ToString()
             };
 
             await _db.Devices.AddAsync(device, ct);
@@ -922,6 +926,86 @@ namespace MyApp.Infrastructure.Services
             return result;
         }
 
+
+
+
+        public async Task<List<DeviceConfigurationResponseDto>> GetDeviceConfigurationsByGatewayAsync(string gatewayId, CancellationToken ct = default)
+        {
+            if (string.IsNullOrEmpty(gatewayId))
+                throw new ArgumentException("GatewayId cannot be empty.", nameof(gatewayId));
+
+            // STEP 1: Get all devices whose GatewayId matches
+            var gatewayDeviceIds = await _db.Devices
+                .AsNoTracking()
+                .Where(d => d.GatewayId == gatewayId && !d.IsDeleted)
+                .Select(d => d.DeviceId)
+                .ToListAsync(ct);
+
+            if (!gatewayDeviceIds.Any())
+                return new List<DeviceConfigurationResponseDto>();
+
+
+            // STEP 2: Filter devices by mapping table (only mapped devices)
+            var mappedDeviceIds = await _assetDb.MappingTable
+                .AsNoTracking()
+                .Where(m => gatewayDeviceIds.Contains(m.DeviceId))
+                .Select(m => m.DeviceId)
+                .Distinct()
+                .ToListAsync(ct);
+
+            if (!mappedDeviceIds.Any())
+                return new List<DeviceConfigurationResponseDto>();
+
+            var devices = await _db.Devices
+                .AsNoTracking()
+                .Where(d => mappedDeviceIds.Contains(d.DeviceId))
+                .Include(d => d.DeviceConfiguration)
+                .Include(d => d.DeviceSlave)
+                .ThenInclude(s => s.Registers)
+                .ToListAsync(ct);
+
+
+            if (!devices.Any())
+                return new List<DeviceConfigurationResponseDto>();
+
+            // STEP 3: Map to DTO
+            var result = devices.Select(device => new DeviceConfigurationResponseDto
+            {
+                DeviceId = device.DeviceId,
+                Name = device.Name,
+                Protocol = device.Protocol ?? string.Empty,
+                PollIntervalMs = device.DeviceConfiguration?.PollIntervalMs ?? 1000,
+                ProtocolSettingsJson = device.DeviceConfiguration?.ProtocolSettingsJson ?? "{}",
+
+                Slaves = device.DeviceSlave
+                    .Where(s => s.IsHealthy)
+                    .Select(s => new SlaveDto
+                    {
+                        DeviceSlaveId = s.deviceSlaveId,
+                        SlaveIndex = s.slaveIndex,
+                        IsHealthy = s.IsHealthy,
+                        Registers = s.Registers
+                            .Where(r => r.IsHealthy)
+                            .OrderBy(r => r.RegisterAddress)
+                            .Select(r => new DeviceRegisterDto
+                            {
+                                RegisterId = r.RegisterId,
+                                RegisterAddress = r.RegisterAddress,
+                                RegisterLength = r.RegisterLength,
+                                DataType = r.DataType,
+                                Scale = r.Scale,
+                                Unit = r.Unit,
+                                ByteOrder = r.ByteOrder,
+                                WordSwap = r.WordSwap,
+                                IsHealthy = r.IsHealthy
+                            })
+                            .ToList()
+                    })
+                    .ToList()
+            }).ToList();
+
+            return result;
+        }
 
 
 
