@@ -861,7 +861,8 @@ namespace MyApp.Infrastructure.Services
         .ToListAsync(ct);
 
     if (!gatewayDeviceIds.Any())
-        return new List<DeviceConfigurationResponseDto>();
+        throw new KeyNotFoundException($"No gateway found with GatewayId '{gatewayId}'.");
+
 
     // STEP 2: Get mappings ONLY for those devices
     var mappings = await _assetDb.MappingTable
