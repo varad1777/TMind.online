@@ -28,23 +28,19 @@ namespace MyApp.Api.Controllers
             var gateway = await _db.Gateway
                 .FirstOrDefaultAsync(g => g.ClientId == client_id && g.Status == "ACTIVE");
 
-            if (gateway == null)
-                return Unauthorized("Invalid client");
+            if (gateway == null) return Unauthorized("Invalid client");
 
             var hash = HashSecret(client_secret);
-
-            if (hash != gateway.ClientSecretHash)
-                return Unauthorized("Invalid secret");
+            if (hash != gateway.ClientSecretHash) return Unauthorized("Invalid secret");
 
             var claims = new[]
             {
                 new Claim("client_id", gateway.ClientId),
-                new Claim("type", "gateway")
+                new Claim("type", "gateway"),
+                new Claim("scope", "device.config.read")
             };
 
-            var key = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(_config["Jwt:Key"]!)
-            );
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));
 
             var token = new JwtSecurityToken(
                 issuer: _config["Jwt:Issuer"],
@@ -65,9 +61,7 @@ namespace MyApp.Api.Controllers
         private static string HashSecret(string secret)
         {
             using var sha = SHA256.Create();
-            return Convert.ToHexString(
-                sha.ComputeHash(Encoding.UTF8.GetBytes(secret))
-            );
+            return Convert.ToHexString(sha.ComputeHash(Encoding.UTF8.GetBytes(secret)));
         }
     }
 }
