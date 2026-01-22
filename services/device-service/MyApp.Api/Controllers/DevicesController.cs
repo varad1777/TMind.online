@@ -469,7 +469,6 @@ namespace MyApp.Api.Controllers
 
 
         [HttpGet("configurations/gateway/{gatewayId}")]
-        //[Authorize]
         [Authorize(Policy = "GatewayOnly")]
         public async Task<IActionResult> GetConfigurationsByGateway(
            string gatewayId,
