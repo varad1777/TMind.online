@@ -124,42 +124,47 @@ export default function MapDeviceToAsset() {
 
 
 
-  async function loadAll(): Promise<void> {
-    setLoading(true);
-    try {
-      const assetResp = await apiAsset.get<AssetConfig[]>(`/AssetConfig/${assetid}`);
-      const assetData = Array.isArray(assetResp.data) ? assetResp.data : [];
+async function loadAll(): Promise<void> {
+  setLoading(true);
+  try {
+    const assetResp = await apiAsset.get<AssetConfig[]>(`/AssetConfig/${assetid}`);
+    const assetData = Array.isArray(assetResp.data) ? assetResp.data : [];
 
-      if (!assetData || assetData.length === 0) {
-        toast.info("First assign the signals, then map the device");
-        return navigate(-1);
-      }
-      setAssetConfigs(assetData);
-
-      // --- mappings: only keep mappings for this asset ---
-      const mappingsResp = await apiAsset.get<ExistingMapping[]>(`/Mapping`);
-      const mappingsData = Array.isArray(mappingsResp.data) ? mappingsResp.data : [];
-      const mappingsForThisAsset = mappingsData.filter((m) => m.assetId === assetid);
-      setExistingMappings(mappingsForThisAsset);
-
-      const registerAddresses = assetData
-        .map((c) => Number(c.regsiterAdress))
-        .filter((v) => !Number.isNaN(v));
-
-      if (registerAddresses.length === 0) {
-        setMatchResult({ success: true, data: [] });
-        return;
-      }
-
-      const matchResp = await matchByRegisterAddress({ registerAddresses });
-      setMatchResult(matchResp.data ?? { success: true, data: [] });
-    } catch (err: any) {
-      console.error(err);
-      toast.error("Failed to load data");
-    } finally {
-      setLoading(false);
+    if (!assetData || assetData.length === 0) {
+      toast.info("First assign the signals, then map the device");
+      return navigate(-1);
     }
+    setAssetConfigs(assetData);
+
+    const mappingsResp = await apiAsset.get<ExistingMapping[]>(`/Mapping`);
+    const mappingsData = Array.isArray(mappingsResp.data) ? mappingsResp.data : [];
+    const mappingsForThisAsset = mappingsData.filter((m) => m.assetId === assetid);
+    setExistingMappings(mappingsForThisAsset);
+
+    const registerAddresses = assetData
+      .map((c) => Number(c.regsiterAdress))
+      .filter((v) => !Number.isNaN(v));
+
+    if (registerAddresses.length === 0) {
+      setMatchResult({ success: true, data: [] });
+      return;
+    }
+
+    console.log('Calling matchByRegisterAddress with:', registerAddresses);
+    
+    const matchResp = await matchByRegisterAddress(registerAddresses);
+    
+    console.log('Match Result:', matchResp);
+    
+    setMatchResult(matchResp);
+  } catch (err: any) {
+    console.error('loadAll error:', err);
+    toast.error("Failed to load data");
+    setMatchResult({ success: false, data: [], error: err });
+  } finally {
+    setLoading(false);
   }
+}
 
 
 

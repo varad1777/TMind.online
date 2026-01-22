@@ -4,6 +4,8 @@ import {
   Search,
   Plus,
   Loader2,
+  Copy,
+  CheckCircle2,
 } from "lucide-react";
 import {
   Dialog,
@@ -22,6 +24,11 @@ interface Gateway {
   clientId: string;
 }
 
+interface GatewayCredentials {
+  clientId: string;
+  clientSecret: string;
+}
+
 export default function Gateways() {
   const [gateways, setGateways] = useState<Gateway[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,6 +42,11 @@ export default function Gateways() {
   const [openDialog, setOpenDialog] = useState(false);
   const [gatewayName, setGatewayName] = useState("");
   const [saving, setSaving] = useState(false);
+
+  // Credentials Dialog - NEW
+  const [openCredentialsDialog, setOpenCredentialsDialog] = useState(false);
+  const [credentials, setCredentials] = useState<GatewayCredentials | null>(null);
+  const [copied, setCopied] = useState(false);
 
   // Debounce search
   useEffect(() => {
@@ -59,7 +71,7 @@ export default function Gateways() {
     fetchGateways();
   }, [debouncedSearch]);
 
-  // Add gateway
+  // Add gateway - UPDATED
   const handleAddGateway = async () => {
     if (!gatewayName.trim()) {
       toast.error("Gateway name is required");
@@ -72,14 +84,18 @@ export default function Gateways() {
 
       toast.success("Gateway added successfully");
 
-      // IMPORTANT: credentials returned once
-      console.log("Gateway Credentials:", res);
+      // Store credentials and show dialog
+      setCredentials({
+        clientId: res.clientId,
+        clientSecret: res.clientSecret
+      });
+      setOpenCredentialsDialog(true);
 
       setGatewayName("");
       setOpenDialog(false);
 
       // Refresh list
-      const updated = await getGateways                                                                                                             ();
+      const updated = await getGateways();
       setGateways(updated);
     } catch (err: any) {
       toast.error(
@@ -90,6 +106,26 @@ export default function Gateways() {
     } finally {
       setSaving(false);
     }
+  };
+
+  // Copy to clipboard - NEW
+  const handleCopy = async () => {
+    if (credentials?.clientSecret) {
+      try {
+        await navigator.clipboard.writeText(credentials.clientSecret);
+        setCopied(true);
+        toast.success("Client secret copied to clipboard");
+        setTimeout(() => setCopied(false), 2000);
+      } catch (err) {
+        toast.error("Failed to copy to clipboard");
+      }
+    }
+  };
+
+  // Reset copied state when dialog closes - NEW
+  const handleCloseCredentialsDialog = () => {
+    setOpenCredentialsDialog(false);
+    setCopied(false);
   };
 
   return (
@@ -191,6 +227,64 @@ export default function Gateways() {
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
               )}
               Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Credentials Dialog - NEW */}
+      <Dialog open={openCredentialsDialog} onOpenChange={handleCloseCredentialsDialog}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Gateway Credentials</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
+              <p className="text-sm text-yellow-800 font-medium">
+                ⚠️ Important: Save these credentials now
+              </p>
+              <p className="text-xs text-yellow-700 mt-1">
+                The client secret will only be shown once and cannot be retrieved later.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">
+                Client ID
+              </label>
+              <div className="p-3 bg-gray-50 border rounded-md font-mono text-sm break-all">
+                {credentials?.clientId}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">
+                Client Secret
+              </label>
+              <div className="flex gap-2">
+                <div className="flex-1 p-3 bg-gray-50 border rounded-md font-mono text-sm break-all">
+                  {credentials?.clientSecret}
+                </div>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={handleCopy}
+                  className="shrink-0"
+                >
+                  {copied ? (
+                    <CheckCircle2 className="h-4 w-4 text-green-600" />
+                  ) : (
+                    <Copy className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button onClick={handleCloseCredentialsDialog}>
+              I've Saved the Credentials
             </Button>
           </DialogFooter>
         </DialogContent>

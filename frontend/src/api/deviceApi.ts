@@ -106,12 +106,26 @@ export const getDeletedDevices = async () => {
   return response.data.data;
 };
 
-// POST /api/devices/match-by-address
 export const matchByRegisterAddress = async (registerAddresses: number[]) => {
-  const response = await api.post("/devices/match-by-address", {
-    registerAddresses,
-  });
-  return response.data.data;
+  try {
+    const response = await api.post("/devices/match-by-address", {
+      RegisterAddresses: registerAddresses  // ✅ Capital R
+    });
+    
+    console.log('API Response:', response.data);
+    
+    return {
+      success: true,
+      data: response.data.data || []
+    };
+  } catch (error: any) {
+    console.error('Match API Error:', error.response?.data || error);
+    return {
+      success: false,
+      data: [],
+      error: error
+    };
+  }
 };
 
 // (unchanged – system stats)
