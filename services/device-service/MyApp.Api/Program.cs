@@ -57,21 +57,22 @@ builder.Services.AddEndpointsApiExplorer();              // discovers endpoints 
 builder.Services.AddSwaggerGen();                        // <-- registers ISwaggerProvider
 
 // This is for Asset DB access (only MappingTable or other needed tables)
-builder.Services.AddDbContext<AssetDbContextForDevice>(opt =>
-    opt.UseSqlServer(builder.Configuration.GetConnectionString("AssetDbConnection")));
+// builder.Services.AddDbContext<AssetDbContextForDevice>(opt =>
+//     opt.UseSqlServer(builder.Configuration.GetConnectionString("AssetDbConnection")));
 
 
-builder.Services.AddDbContext<AppDbContext>(opt =>
-    opt.UseSqlServer(builder.Configuration.GetConnectionString("DeviceDbConnection")));
+// builder.Services.AddDbContext<AppDbContext>(opt =>
+//     opt.UseSqlServer(builder.Configuration.GetConnectionString("DeviceDbConnection")));
 
 
 
 
 
-builder.Services.AddScoped<IDeviceManager, DeviceManager>();
-builder.Services.AddHostedService<ModbusPollerHostedService>();
+// builder.Services.AddScoped<IDeviceManager, DeviceManager>();
+// builder.Services.AddHostedService<ModbusPollerHostedService>();
+builder.Services.AddHostedService<OpcUaPollerHostedService>();
 builder.Services.AddSignalR();
-builder.Services.AddSingleton<RabbitMqService>();
+// builder.Services.AddSingleton<RabbitMqService>();
 
 // Allow your frontend to call the API
 builder.Services.AddCors(options =>
@@ -142,11 +143,11 @@ builder.Services.AddHealthChecks();
 var app = builder.Build();
 
 
-using (var scope = app.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    db.Database.Migrate();
-}
+// using (var scope = app.Services.CreateScope())
+// {
+//     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+//     db.Database.Migrate();
+// }
 
 // Middleware
 if (app.Environment.IsDevelopment())
