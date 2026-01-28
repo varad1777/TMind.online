@@ -1,5 +1,7 @@
 ﻿using System;
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
+using System.Diagnostics.CodeAnalysis;
 
 namespace MyApp.Domain.Entities
 {
@@ -7,6 +9,9 @@ namespace MyApp.Domain.Entities
     {
         [Key]
         public Guid DeviceId { get; set; } = Guid.NewGuid();
+
+        [NotNull]
+        public string GatewayId {get; set;}
         public string Name { get; set; } = null!;
         public string? Description { get; set; }
         public string? Protocol { get; set; } = "ModbusTCP";

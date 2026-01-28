@@ -9,6 +9,7 @@ using System.Net.WebSockets;
 using Microsoft.EntityFrameworkCore;
 using AuthMicroservice.Infrastructure.Persistance.DbContexts;
 using Microsoft.Data.SqlClient;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 //localhost
 
 
@@ -188,7 +189,7 @@ namespace AuthMicroservice.Controllers
         }
 
         [HttpGet("me")]
-        [Authorize]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         public async Task<IActionResult> GetCurrentUser()
         {
             try

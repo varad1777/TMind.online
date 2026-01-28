@@ -16,6 +16,8 @@ namespace MyApp.Application.Dtos
         public List<DeviceSlaveDto>? Ports { get; set; }
 
         public DeviceConfigurationDto? Configuration { get; set; }
+
+        public string GatewayClientId { get; set; }   
     }
 
     public class DeviceSlaveDto

@@ -10,7 +10,7 @@ import {
   Clock,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { getDevices, getDeletedDeviced,getAvgApiResponseTime } from "@/api/deviceApi";
+import { getDevices, getDeletedDevices,getAvgApiResponseTime } from "@/api/deviceApi";
 import { getAssetHierarchy } from "@/api/assetApi";
 import { useAuth } from "@/context/AuthContext";
 import { useNotifications } from "@/context/NotificationContext";
@@ -85,7 +85,7 @@ export default function Dashboard() {
         setTotalDevices(deviceRes.totalCount || deviceRes.items?.length || 0);
 
         if (isAdmin) {
-          const deletedRes = await getDeletedDeviced();
+          const deletedRes = await getDeletedDevices();
           setDeletedDevices(deletedRes?.length || 0);
         }
 

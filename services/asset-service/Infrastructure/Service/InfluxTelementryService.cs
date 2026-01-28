@@ -31,9 +31,9 @@ namespace Infrastructure.Service
         private readonly QueryApi _queryApi;
         private readonly ILogger<InfluxTelemetryService> _logger;
         private readonly RabbitMqService _queue;
-        
 
-        
+
+
 
         public InfluxTelemetryService(
              ILogger<InfluxTelemetryService> logger,
@@ -53,7 +53,7 @@ namespace Infrastructure.Service
             _maxExcelRows = config.ExcelMaxRows;
             _maxCsvRows = config.CsvMaxRows;
             _queue = queue;
-            
+
         }
 
         public async Task WriteTelemetryAsync(InfluxTelementryDto dto)
@@ -103,7 +103,7 @@ namespace Infrastructure.Service
                 var (startTime, endTime) = GetTimeRange(request);
 
                 // Build Flux query
-                string flux = BuildFluxQuery(mapping.MappingId, startTime, endTime,"Aggregated");
+                string flux = BuildFluxQuery(request.AssetId,request.SignalTypeId, startTime, endTime, "Aggregated");
 
                 Log.Information("Executing Flux Query | MappingId:{MappingId} | Start:{Start} | End:{End}",
                     mapping.MappingId, startTime, endTime);
@@ -154,81 +154,81 @@ namespace Infrastructure.Service
             }
         }
 
-public async Task<TelemetryResponseDto> GetRawData(TelemetryRequestDto request)
-{
-    try
-    {
-               
-        // if ((request.EndTime - request.StartTime).TotalMinutes > 10)
-        //     throw new Exception("Raw data range cannot exceed 10 minutes");
-
-        var (startTime, endTime) = GetTimeRange(request);
-
-        if (endTime <= startTime)
-            throw new Exception("EndTime must be greater than StartTime");
-
-
-        var mapping = await _dbContext.MappingTable
-            .FirstOrDefaultAsync(m =>
-                m.AssetId == request.AssetId &&
-                m.SignalTypeId == request.SignalTypeId);
-
-        if (mapping == null)
-            throw new Exception($"Mapping not found for AssetId:{request.AssetId} and SignalTypeId:{request.SignalTypeId}");
-
-      
-        string flux = BuildFluxQuery(mapping.MappingId, startTime, endTime,"Raw");
-
-        Log.Information(
-            "Executing RAW Flux Query | MappingId:{MappingId} | Start:{Start} | End:{End}",
-            mapping.MappingId, startTime, endTime);
-
-        var tables = await _queryApi.QueryAsync(flux, _org);
-        var values = new List<TelemetryPointDto>();
-
-        foreach (var table in tables)
+        public async Task<TelemetryResponseDto> GetRawData(TelemetryRequestDto request)
         {
-            foreach (var record in table.Records)
+            try
             {
-                if (record.GetTime().HasValue && record.GetValue() != null)
-                {
-                    values.Add(new TelemetryPointDto
-                    {
-                        Time = record.GetTime().Value
-                            .ToDateTimeUtc()
-                            .ToLocalTime(),
 
-                        Value = (float)Math.Round(
-                            Convert.ToSingle(record.GetValue()), 2)
-                    });
+                // if ((request.EndTime - request.StartTime).TotalMinutes > 10)
+                //     throw new Exception("Raw data range cannot exceed 10 minutes");
+
+                var (startTime, endTime) = GetTimeRange(request);
+
+                if (endTime <= startTime)
+                    throw new Exception("EndTime must be greater than StartTime");
+
+
+                var mapping = await _dbContext.MappingTable
+                    .FirstOrDefaultAsync(m =>
+                        m.AssetId == request.AssetId &&
+                        m.SignalTypeId == request.SignalTypeId);
+
+                if (mapping == null)
+                    throw new Exception($"Mapping not found for AssetId:{request.AssetId} and SignalTypeId:{request.SignalTypeId}");
+
+
+                string flux = BuildFluxQuery(request.AssetId, request.SignalTypeId, startTime, endTime, "Raw");
+
+                Log.Information(
+                    "Executing RAW Flux Query | MappingId:{MappingId} | Start:{Start} | End:{End}",
+                    mapping.MappingId, startTime, endTime);
+
+                var tables = await _queryApi.QueryAsync(flux, _org);
+                var values = new List<TelemetryPointDto>();
+
+                foreach (var table in tables)
+                {
+                    foreach (var record in table.Records)
+                    {
+                        if (record.GetTime().HasValue && record.GetValue() != null)
+                        {
+                            values.Add(new TelemetryPointDto
+                            {
+                                Time = record.GetTime().Value
+                                    .ToDateTimeUtc()
+                                    .ToLocalTime(),
+
+                                Value = (float)Math.Round(
+                                    Convert.ToSingle(record.GetValue()), 2)
+                            });
+                        }
+                    }
                 }
+
+                Log.Information("RAW telemetry points fetched: {Count}", values.Count);
+
+
+                return new TelemetryResponseDto
+                {
+                    AssetId = mapping.AssetId,
+                    DeviceId = mapping.DeviceId,
+                    SignalTypeId = mapping.SignalTypeId,
+                    SignalName = mapping.SignalName,
+                    Unit = mapping.SignalUnit,
+                    StartTime = startTime,
+                    EndTime = endTime,
+                    Values = values
+                };
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex,
+                    "Failed to fetch RAW telemetry | AssetId:{AssetId} | SignalTypeId:{SignalTypeId}",
+                    request.AssetId, request.SignalTypeId);
+
+                throw;
             }
         }
-
-        Log.Information("RAW telemetry points fetched: {Count}", values.Count);
-
-        // 5️⃣ Return response
-        return new TelemetryResponseDto
-        {
-            AssetId = mapping.AssetId,
-            DeviceId = mapping.DeviceId,
-            SignalTypeId = mapping.SignalTypeId,
-            SignalName = mapping.SignalName,
-            Unit = mapping.SignalUnit,
-            StartTime = startTime,
-            EndTime = endTime,
-            Values = values
-        };
-    }
-    catch (Exception ex)
-    {
-        Log.Error(ex,
-            "Failed to fetch RAW telemetry | AssetId:{AssetId} | SignalTypeId:{SignalTypeId}",
-            request.AssetId, request.SignalTypeId);
-
-        throw;
-    }
-}
 
 
         public async Task<TelemetryResponseDto> GetTelemetrySeriesAsync(Guid assetId, Guid signalTypeId, string startTime)
@@ -312,32 +312,35 @@ public async Task<TelemetryResponseDto> GetRawData(TelemetryRequestDto request)
         }
 
         // helper Build Flux query
-        private string BuildFluxQuery(Guid mappingId, DateTime startTime, DateTime endTime,string Type)
+        private string BuildFluxQuery(Guid assetId,Guid signalTypeId, DateTime startTime, DateTime endTime, string Type)
         {
             var fluxStartTime = startTime.ToString("yyyy-MM-ddTHH:mm:ssZ");
             var fluxEndTime = endTime.ToString("yyyy-MM-ddTHH:mm:ssZ");
 
-            if(Type=="Aggregated"){
-            var window = GetAggregationWindow(startTime, endTime);
+            if (Type == "Aggregated")
+            {
+                var window = GetAggregationWindow(startTime, endTime);
 
-            return $@"
-                    from(bucket: ""{_bucket}"")
-                    |> range(start: {fluxStartTime}, stop: {fluxEndTime})
-                    |> filter(fn: (r) => r._field == ""value"")
-                    |> filter(fn: (r) => r.mappingId == ""{mappingId}"")
-                    |> aggregateWindow(every: {window}, fn: mean, createEmpty: false)
-                    |> keep(columns: [""_time"", ""_value""])
-                    |> sort(columns: [""_time""], desc: false)";
-            }
+                return $@"
+                        from(bucket: ""{_bucket}"")
+                        |> range(start: {fluxStartTime}, stop: {fluxEndTime})
+                        |> filter(fn: (r) => r._field == ""value"")
+                        |> filter(fn: (r) => r.assetId == ""{assetId}"")
+                        |> filter(fn: (r) => r.signalTypeId == ""{signalTypeId}"")
+                        |> aggregateWindow(every: {window}, fn: mean, createEmpty: false)
+                        |> keep(columns: [""_time"", ""_value""])
+                        |> sort(columns: [""_time""], desc: false)";
+                    }
             else
             {
-                return $@"
-                    from(bucket: ""{_bucket}"")
-                    |> range(start: {fluxStartTime}, stop: {fluxEndTime})
-                    |> filter(fn: (r) => r._field == ""value"")
-                    |> filter(fn: (r) => r.mappingId == ""{mappingId}"")
-                    |> keep(columns: [""_time"", ""_value""])
-                    |> sort(columns: [""_time""], desc: false)";
+               return $@"
+                         from(bucket: ""{_bucket}"")
+                        |> range(start: {fluxStartTime}, stop: {fluxEndTime})
+                        |> filter(fn: (r) => r._field == ""value"")
+                        |> filter(fn: (r) => r.assetId == ""{assetId}"")
+                        |> filter(fn: (r) => r.signalTypeId == ""{signalTypeId}"")
+                        |> keep(columns: [""_time"", ""_value""])
+                        |> sort(columns: [""_time""], desc: false)";
 
             }
 

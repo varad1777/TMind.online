@@ -10,6 +10,7 @@ export const ROLE_SIDEBAR_ACCESS: Record<UserRole, string[]> = {
     "notifications",
     "manage-user",
     "deleted-items",
+    "gateways",
   ],
 
   Engineer: [
@@ -18,6 +19,8 @@ export const ROLE_SIDEBAR_ACCESS: Record<UserRole, string[]> = {
     "devices",
     "signal",
     "notifications",
+    "reports",
+    "gateways",
   ],
 
   Operator: [
@@ -26,6 +29,7 @@ export const ROLE_SIDEBAR_ACCESS: Record<UserRole, string[]> = {
     "signal",
     "notifications",
     "reports",
+    "gateways",
   ],
 
   User: [

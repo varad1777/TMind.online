@@ -27,6 +27,9 @@ namespace MyApp.Infrastructure.Services
             var name = (request.Name ?? string.Empty).Trim();
             if (string.IsNullOrEmpty(name)) throw new ArgumentException("Device name is required.", nameof(request.Name));
 
+            if (string.IsNullOrEmpty(request.GatewayClientId))
+                throw new ArgumentException("Gateway Client is REquired", nameof(request.GatewayClientId));
+
             const int MaxDevices = 20;
             var currentCount = await _db.Devices.CountAsync(d => !d.IsDeleted, ct);
             if (currentCount >= MaxDevices)
@@ -44,7 +47,8 @@ namespace MyApp.Infrastructure.Services
             {
                 DeviceId = Guid.NewGuid(),
                 Name = name,
-                Description = string.IsNullOrWhiteSpace(request.Description) ? null : request.Description.Trim()
+                Description = string.IsNullOrWhiteSpace(request.Description) ? null : request.Description.Trim(),
+                GatewayId=request.GatewayClientId.ToString()
             };
 
             await _db.Devices.AddAsync(device, ct);
@@ -843,6 +847,106 @@ namespace MyApp.Infrastructure.Services
             return result;
         }
 
+
+  public async Task<List<DeviceConfigurationResponseDto>> GetDeviceConfigurationsByGatewayAsync(string gatewayId, CancellationToken ct = default)
+  {
+    if (string.IsNullOrWhiteSpace(gatewayId))
+        throw new ArgumentException("GatewayId cannot be empty.", nameof(gatewayId));
+
+    // STEP 1: Get devices that belong to this gateway
+    var gatewayDeviceIds = await _db.Devices
+        .AsNoTracking()
+        .Where(d => d.GatewayId == gatewayId && !d.IsDeleted)
+        .Select(d => d.DeviceId)
+        .ToListAsync(ct);
+
+    if (!gatewayDeviceIds.Any())
+        throw new KeyNotFoundException($"No gateway found with GatewayId '{gatewayId}'.");
+
+
+    // STEP 2: Get mappings ONLY for those devices
+    var mappings = await _assetDb.MappingTable
+        .AsNoTracking()
+        .Where(m => gatewayDeviceIds.Contains(m.DeviceId))
+        .Select(m => new
+        {
+            m.DeviceId,
+            RegisterId = m.registerId   
+        })
+        .ToListAsync(ct);
+
+    if (!mappings.Any())
+        return new List<DeviceConfigurationResponseDto>();
+
+    // STEP 3: Extract mapped device IDs
+    var mappedDeviceIds = mappings
+        .Select(m => m.DeviceId)
+        .Distinct()
+        .ToList();
+
+    // STEP 4: Load devices + configuration + slaves + registers
+    var devices = await _db.Devices
+        .AsNoTracking()
+        .Where(d => mappedDeviceIds.Contains(d.DeviceId) && !d.IsDeleted)
+        .Include(d => d.DeviceConfiguration)
+        .Include(d => d.DeviceSlave)
+            .ThenInclude(s => s.Registers)
+        .ToListAsync(ct);
+
+    if (!devices.Any())
+        return new List<DeviceConfigurationResponseDto>();
+
+    // STEP 5: Build lookup for mapped registers per device
+    var mappedRegistersByDevice = mappings
+        .GroupBy(m => m.DeviceId)
+        .ToDictionary(
+            g => g.Key,
+            g => g.Select(x => x.RegisterId).ToHashSet()
+        );
+
+    // STEP 6: Build response
+    var result = devices.Select(device => new DeviceConfigurationResponseDto
+    {
+          DeviceId = device.DeviceId,
+          Name = device.Name,
+          Protocol = device.Protocol ?? string.Empty,
+          PollIntervalMs = device.DeviceConfiguration?.PollIntervalMs ?? 1000,
+          ProtocolSettingsJson = device.DeviceConfiguration?.ProtocolSettingsJson ?? "{}",
+  
+          Slaves = device.DeviceSlave
+              .Where(s => s.IsHealthy)
+              .Select(s => new SlaveDto
+              {
+                  DeviceSlaveId = s.deviceSlaveId,
+                  SlaveIndex = s.slaveIndex,
+                  IsHealthy = s.IsHealthy,
+  
+                  Registers = s.Registers
+                      .Where(r =>
+                          r.IsHealthy &&
+                          mappedRegistersByDevice.TryGetValue(device.DeviceId, out var registerIds) &&
+                          registerIds.Contains(r.RegisterId)   
+                      )
+                      .OrderBy(r => r.RegisterAddress)
+                      .Select(r => new DeviceRegisterDto
+                      {
+                          RegisterId = r.RegisterId,            
+                          RegisterAddress = r.RegisterAddress,
+                          RegisterLength = r.RegisterLength,
+                          DataType = r.DataType,
+                          Scale = r.Scale,
+                          Unit = r.Unit,
+                          ByteOrder = r.ByteOrder,
+                          WordSwap = r.WordSwap,
+                          IsHealthy = r.IsHealthy
+                      })
+                      .ToList()
+              })
+              .ToList()
+      }).ToList();
+  
+     return result;
+    }
 
     }
 }

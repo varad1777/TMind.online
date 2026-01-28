@@ -6,7 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 
 // APIs
 import { getDeletedAssets, restoreAssetById } from "@/api/assetApi";
-import { getDeletedDeviced, retriveDeviceById } from "@/api/deviceApi";
+import { getDeletedDevices, restoreDeviceById } from "@/api/deviceApi";
 
 // ----------------------
 // Interfaces
@@ -45,21 +45,29 @@ export default function DeletedItems() {
   // -------------------------------------------------
   // FETCH DELETED ASSETS
   // -------------------------------------------------
-  useEffect(() => {
-    const fetchAssets = async () => {
-      try {
-        setLoadingAssets(true);
-        const data = await getDeletedAssets();
-        setAssets(data);
-      } catch (err) {
-        setAssetError("Failed to fetch deleted assets.");
-        toast.error("Failed to load deleted assets.");
-      } finally {
-        setLoadingAssets(false);
-      }
-    };
-    fetchAssets();
-  }, []);
+useEffect(() => {
+  const fetchAssets = async () => {
+    try {
+      setLoadingAssets(true);
+      const data = await getDeletedAssets();
+
+      // Map API Asset[] to your local Asset[] type
+      const assetsWithId = data.map(a => ({
+        ...a,
+        id: a.id || a.assetId || "" // <-- assign id from API field or empty
+      }));
+
+      setAssets(assetsWithId);
+    } catch (err) {
+      setAssetError("Failed to fetch deleted assets.");
+      toast.error("Failed to load deleted assets.");
+    } finally {
+      setLoadingAssets(false);
+    }
+  };
+  fetchAssets();
+}, []);
+
 
   const restoreAsset = async (assetId: string) => {
     try {
@@ -82,7 +90,7 @@ export default function DeletedItems() {
     const fetchDevices = async () => {
       try {
         setLoadingDevices(true);
-        const data = await getDeletedDeviced();
+        const data = await getDeletedDevices();
         setDevices(data);
       } catch (err) {
         setDeviceError("Failed to fetch deleted devices.");
@@ -96,7 +104,7 @@ export default function DeletedItems() {
 
   const retrieveDevice = async (deviceId: string) => {
     try {
-      await retriveDeviceById(deviceId);
+      await restoreDeviceById(deviceId);
       setDevices((prev) => prev.filter((d) => d.deviceId !== deviceId));
       toast.success("Device retrieved successfully!", { autoClose: 2000 });
     } catch (err) {
